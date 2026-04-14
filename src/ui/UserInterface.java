@@ -3,7 +3,6 @@ package ui;
 import java.util.Scanner;
 
 public class UserInterface {
-    // O Scanner é a ferramenta nativa do Java para ler o teclado (o stdin)
     private Scanner scanner;
 
     public UserInterface() {
@@ -19,7 +18,6 @@ public class UserInterface {
     }
     public String getInput(String prompt) {
         System.out.print(prompt + ": ");
-        // nextLine() lê a linha inteira, inclusive espaços. Muito mais seguro que o scanf de C!
         return scanner.nextLine();
     }
 
@@ -39,7 +37,6 @@ public class UserInterface {
                 int choice = Integer.parseInt(input);
                 return choice; // Se a conversão deu certo, retorna a opção e sai do loop
             } catch (NumberFormatException e) {
-                // Se o usuário digitou uma letra, o Java não "quebra".
                 showError("Entrada inválida. Por favor, digite um número.");
             }
         }
