@@ -1,0 +1,13 @@
+# Ignorar arquivos compilados do Java
+*.class
+
+# Ignorar pastas de saida (caso a sua IDE decida organizar os .class aqui no futuro)
+bin/
+out/
+build/
+
+# Ignorar arquivos e pastas de configuracao de IDEs (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+.metadata/
