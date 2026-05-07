@@ -58,12 +58,22 @@ public class ReportsMenu {
             return;
         }
 
-        ui.showMessage("--- RELATÓRIO GERAL DE ALUNOS ---");
+        // 1. Cria o construtor de texto
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE ALUNOS ---\n");
+
+        // 2. Acumula os dados linha por linha
         for (Student s : students) {
             String status = s.isActive() ? "ATIVO" : "INATIVO";
-            System.out.printf("Nome: %-20s | CPF: %-14s | Idade: %02d anos | Status: %s\n",
+
+            // Usa String.format para montar o texto formatado e anexa no StringBuilder
+            String linha = String.format("Nome: %-20s | CPF: %-14s | Idade: %02d anos | Status: %s\n",
                     s.getName(), s.getCpf(), s.calculateAge(), status);
+            relatorio.append(linha);
         }
+
+        // Manda a interface (seja ela Terminal ou JOptionPane) para exibir o texto no final.
+        ui.showMessage(relatorio.toString());
     }
 
     private void reportPlans() {
@@ -74,13 +84,18 @@ public class ReportsMenu {
             return;
         }
 
-        ui.showMessage("--- RELATÓRIO GERAL DE PLANOS ---");
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE PLANOS ---\n");
         for (Plan p : plans) {
             // Calcula o preço base total apenas para exibição no relatório
             double totalBase = p.calculateTotalPrice(p.getMinDurationMonths());
-            System.out.printf("Plano: %-15s (%-10s) | Mínimo: %02d meses | R$ %6.2f/mês | Total Base: R$ %7.2f\n",
+            String linha = String.format("Plano: %-15s (%-10s) | Mínimo: %02d meses | R$ %6.2f/mês | Total Base: R$ %7.2f\n",
                     p.getName(), p.getType(), p.getMinDurationMonths(), p.getPricePerMonth(), totalBase);
+
+            relatorio.append(linha);
         }
+
+        ui.showMessage(relatorio.toString());
     }
 
     private void reportEnrollments() {
@@ -91,10 +106,15 @@ public class ReportsMenu {
             return;
         }
 
-        ui.showMessage("--- RELATÓRIO GERAL DE MATRÍCULAS ---");
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE MATRÍCULAS ---\n");
+
         for (Enrollment e : enrollments) {
-            System.out.printf("Cód: %04d | Aluno: %-15s | Plano: %-10s | Status: %-9s | Saldo: R$ %7.2f\n",
-                    e.getCode(), e.getStudent().getName(), e.getPlan().getName(), e.getStatus(), e.calculateBalance());
+            String linha = String.format("Cód: %04d | Aluno: %-15s | Plano: %-10s | Status: %-9s | Saldo: R$ %7.2f\n", e.getCode(), e.getStudent().getName(), e.getPlan().getName(), e.getStatus(), e.calculateBalance());
+
+            relatorio.append(linha);
         }
+
+        ui.showMessage(relatorio.toString());
     }
 }
