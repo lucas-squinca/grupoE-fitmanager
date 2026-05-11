@@ -1,13 +1,14 @@
 package domain;
 
-public class MonthlyPlan extends Plan {
-    public MonthlyPlan(String name, String description, int minDurationMonths, double pricePerMonth) {
+public class QuarterlyPlan extends Plan {
+    public QuarterlyPlan(String name, String description, int minDurationMonths, double pricePerMonth) {
         super(name, description, minDurationMonths, pricePerMonth);
     }
 
     @Override
     public double calculateTotalPrice(int months) {
-        return getPricePerMonth() * months;
+        double total = getPricePerMonth() * months;
+        return total * 0.95;
     }
 
     @Override
