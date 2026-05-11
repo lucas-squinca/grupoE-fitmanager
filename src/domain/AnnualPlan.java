@@ -20,12 +20,17 @@ public class AnnualPlan extends Plan {
         LocalDate now = LocalDate.now();
 
         long monthsElapsed = ChronoUnit.MONTHS.between(start, now);
-        double halfDuration = enrollment.getDuration() / 2.0;
+        double halfDuration = enrollment.getDurationMonths() / 2.0;
 
         if (monthsElapsed < halfDuration) {
             return enrollment.getTotalPrice() * 0.20;
         }
 
         return 0.0;
+    }
+
+    @Override
+    public PlanType getType() {
+        return PlanType.ANNUAL;
     }
 }

@@ -15,4 +15,9 @@ public class SemiAnnualPlan extends Plan {
     public double getCancellationFee(Enrollment enrollment) {
         return 0.0;
     }
+
+    @Override
+    public PlanType getType() {
+        return PlanType.SEMI_ANNUAL;
+    }
 }

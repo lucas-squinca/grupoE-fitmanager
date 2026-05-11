@@ -26,4 +26,5 @@ public abstract class Plan {
 
     public abstract double calculateTotalPrice(int months);
     public abstract double getCancellationFee(Enrollment enrollment);
+    public abstract PlanType getType();
 }
