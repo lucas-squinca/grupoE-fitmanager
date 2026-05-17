@@ -1,19 +1,11 @@
 package application;
 
-import domain.Enrollment;
-import domain.EnrollmentStatus;
-import domain.Payment;
-import domain.PaymentType;
-import domain.Plan;
-import domain.Student;
-
+import domain.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 
 public class EnrollmentService {
     private ArrayList<Enrollment> enrollments;
-
-    // Variável estática geradora de códigos
     private static int nextCode = 1;
 
     public EnrollmentService() {
@@ -24,24 +16,39 @@ public class EnrollmentService {
         return nextCode++;
     }
 
-    // Fluxo 3: Realizar Matrícula
-    public OperationResult enroll(Student student, Plan plan, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription) {
+    // 1. A FÁBRICA DE PAGAMENTOS: Cria a subclasse correta
+    private Payment instantiatePayment(double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+        LocalDate today = LocalDate.now();
+        switch (type) {
+            case PIX:
+                return new PixPayment(today, amount, description, pixKey);
+            case CREDIT_CARD:
+                return new CreditCardPayment(today, amount, description, installments, cardLastDigits);
+            case DEBIT_CARD:
+                return new DebitCardPayment(today, amount, description, cardLastDigits);
+            case CASH:
+                return new CashPayment(today, amount, description, amountReceived);
+            default:
+                return null;
+        }
+    }
 
-        // 1. Validação: A duração contratada não pode ser menor que a mínima do plano
+    // Fluxo 3: Realizar Matrícula
+    public OperationResult enroll(Student student, Plan plan, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+
         if (duration < plan.getMinDurationMonths()) {
             return new OperationResult(false, "Erro: A duração informada é menor que a duração mínima do plano.");
         }
 
-        // 2. Cria a matrícula (Status, endDate e totalPrice são resolvidos lá dentro do construtor)
+        if (paymentType == PaymentType.CASH && amountReceived < amount) {
+            return new OperationResult(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
+        }
+
         Enrollment newEnrollment = new Enrollment(generateCode(), student, plan, startDate, duration);
 
-        // 3. Cria o pagamento inicial
-        Payment initialPayment = new Payment(LocalDate.now(), amount, paymentType, paymentDescription);
+        Payment initialPayment = instantiatePayment(amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
 
-        // 4. Registra o pagamento na matrícula
         newEnrollment.registerPayment(initialPayment);
-
-        // 5. Salva na lista do sistema
         this.enrollments.add(newEnrollment);
 
         return new OperationResult(true, "Matrícula realizada com sucesso!", newEnrollment);
@@ -78,28 +85,28 @@ public class EnrollmentService {
     }
 
     // Fluxo 4: Registrar um novo pagamento em uma matrícula existente
-    public OperationResult registerPayment(int code, double amount, PaymentType type, String description) {
+    public OperationResult registerPayment(int code, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
         Enrollment enrollment = findByCode(code);
 
         if (enrollment == null) {
             return new OperationResult(false, "Erro: Matrícula não encontrada.");
         }
-
-        // Não pode pagar se a matrícula estiver cancelada
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
             return new OperationResult(false, "Erro: Não é possível registrar pagamento em uma matrícula cancelada.");
         }
-
         if (amount <= 0) {
             return new OperationResult(false, "Erro: O valor do pagamento deve ser positivo.");
         }
 
-        Payment payment = new Payment(LocalDate.now(), amount, type, description);
+        if (type == PaymentType.CASH && amountReceived < amount) {
+            return new OperationResult(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
+        }
+
+        Payment payment = instantiatePayment(amount, type, description, pixKey, cardLastDigits, installments, amountReceived);
         enrollment.registerPayment(payment);
 
         return new OperationResult(true, "Pagamento registrado com sucesso!");
     }
-
     // Fluxo 5: Cancelar Matrícula
     public OperationResult cancel(int code) {
         Enrollment enrollment = findByCode(code);
