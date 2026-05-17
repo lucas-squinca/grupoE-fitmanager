@@ -188,14 +188,19 @@ public class EnrollmentMenu {
         ArrayList<Enrollment> enrollments = fitManager.listEnrollments();
 
         if (enrollments.isEmpty()) {
-            ui.showMessage("Nenhuma matrícula registrada no sistema.");
+            ui.showMessage("Não existem matrículas registadas no sistema.");
             return;
         }
 
-        ui.showMessage("Histórico de Matrículas:");
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE MATRÍCULAS ---\n");
+
         for (Enrollment e : enrollments) {
-            System.out.printf("- [Cód: %d] Aluno: %s | Plano: %s | Status: %s | Saldo: R$ %.2f\n",
-                    e.getCode(), e.getStudent().getName(), e.getPlan().getName(), e.getStatus(), e.calculateBalance());
+            String linha = String.format("Cód: %04d | Aluno: %-15s | Plano: %-10s | Status: %-9s | Saldo: R$ %7.2f\n", e.getCode(), e.getStudent().getName(), e.getPlan().getName(), e.getStatus(), e.calculateBalance());
+
+            relatorio.append(linha);
         }
+
+        ui.showMessage(relatorio.toString());
     }
 }

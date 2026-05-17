@@ -121,14 +121,25 @@ public class StudentMenu {
         ArrayList<Student> students = fitManager.listStudents();
 
         if (students.isEmpty()) {
-            ui.showMessage("Nenhum aluno cadastrado no sistema.");
+            ui.showMessage("Não existem alunos registados no sistema.");
             return;
         }
 
-        ui.showMessage("Lista de Alunos:");
+        // 1. Cria o construtor de texto
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE ALUNOS ---\n");
+
+        // 2. Acumula os dados linha por linha
         for (Student s : students) {
             String status = s.isActive() ? "ATIVO" : "INATIVO";
-            System.out.println("- " + s.getName() + " | CPF: " + s.getCpf() + " | [" + status + "]");
+
+            // Usa String.format para montar o texto formatado e anexa no StringBuilder
+            String linha = String.format("Nome: %-20s | CPF: %-14s | Idade: %02d anos | Status: %s\n",
+                    s.getName(), s.getCpf(), s.calculateAge(), status);
+            relatorio.append(linha);
         }
+
+        // Manda a interface (seja ela Terminal ou JOptionPane) para exibir o texto no final.
+        ui.showMessage(relatorio.toString());
     }
 }

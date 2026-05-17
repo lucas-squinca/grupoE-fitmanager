@@ -132,14 +132,21 @@ public class PlanMenu {
         ArrayList<Plan> plans = fitManager.listPlans();
 
         if (plans.isEmpty()) {
-            ui.showMessage("Nenhum plano cadastrado no sistema.");
+            ui.showMessage("Não existem planos registados no sistema.");
             return;
         }
 
-        ui.showMessage("Lista de Planos Disponíveis:");
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append("--- RELATÓRIO GERAL DE PLANOS ---\n");
         for (Plan p : plans) {
-            System.out.printf("- %s (%s) | Duração min: %d meses | Preço: R$ %.2f\n",
-                    p.getName(), p.getType(), p.getMinDurationMonths(), p.getPricePerMonth());
+            // Calcula o preço base total apenas para exibição no relatório
+            double totalBase = p.calculateTotalPrice(p.getMinDurationMonths());
+            String linha = String.format("Plano: %-15s (%-10s) | Mínimo: %02d meses | R$ %6.2f/mês | Total Base: R$ %7.2f\n",
+                    p.getName(), p.getType(), p.getMinDurationMonths(), p.getPricePerMonth(), totalBase);
+
+            relatorio.append(linha);
         }
+
+        ui.showMessage(relatorio.toString());
     }
 }
