@@ -101,11 +101,17 @@ public class PlanMenu {
         if (plan == null) {
             ui.showError("Nenhum plano encontrado com este nome.");
         } else {
-            ui.showMessage("Dados do Plano:");
-            System.out.println("Nome: " + plan.getName() + " | Tipo: " + plan.getType());
-            System.out.println("Descrição: " + plan.getDescription());
-            System.out.println("Duração Mínima: " + plan.getMinDurationMonths() + " meses");
-            System.out.printf("Preço por mês: R$ %.2f\n", plan.getPricePerMonth());
+            StringBuilder dadosPlano = new StringBuilder();
+            dadosPlano.append("--- Dados do Plano ---\n\n");
+
+            String tipoPlano = plan.getClass().getSimpleName();
+
+            dadosPlano.append(String.format("Nome: %s | Tipo: %s\n", plan.getName(), tipoPlano));
+            dadosPlano.append(String.format("Descrição: %s\n", plan.getDescription()));
+            dadosPlano.append(String.format("Duração Mínima: %d meses\n", plan.getMinDurationMonths()));
+            dadosPlano.append(String.format("Preço por mês: R$ %.2f\n", plan.getPricePerMonth()));
+
+            ui.showMessage(dadosPlano.toString());
         }
     }
 
