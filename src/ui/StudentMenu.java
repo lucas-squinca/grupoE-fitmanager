@@ -96,11 +96,16 @@ public class StudentMenu {
         if (student == null) {
             ui.showError("Nenhum aluno encontrado com este CPF.");
         } else {
-            // Se achou, mostra os dados
-            ui.showMessage("Dados do Aluno:");
-            System.out.println("Nome: " + student.getName() + " (Ativo: " + student.isActive() + ")");
-            System.out.println("CPF: " + student.getCpf());
-            System.out.println("Idade: " + student.calculateAge() + " anos");
+            StringBuilder dadosAluno = new StringBuilder();
+            dadosAluno.append("--- Dados do Aluno ---\n\n");
+
+            String status = student.isActive() ? "ATIVO" : "INATIVO";
+
+            dadosAluno.append(String.format("Nome: %s | [%s]\n", student.getName(), status));
+            dadosAluno.append(String.format("CPF: %s\n", student.getCpf()));
+            dadosAluno.append(String.format("Idade: %d anos\n", student.calculateAge()));
+
+            ui.showMessage(dadosAluno.toString());
         }
     }
 
