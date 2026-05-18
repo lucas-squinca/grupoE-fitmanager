@@ -81,16 +81,33 @@ public class EnrollmentMenu {
             String amountStr = ui.getInput("Digite o valor do pagamento inicial (ex: 50.00)");
             double amount = Double.parseDouble(amountStr);
 
-            // Reutiliza o showMenu para escolher o PaymentType com segurança
             String[] paymentOptions = {"PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"};
             int typeChoice = ui.showMenu("FORMA DE PAGAMENTO", paymentOptions);
 
             PaymentType paymentType = null;
+            String pixKey = "";
+            String cardLastDigits = "";
+            int installments = 1;
+            double amountReceived = 0.0;
+
             switch (typeChoice) {
-                case 1: paymentType = PaymentType.PIX; break;
-                case 2: paymentType = PaymentType.CREDIT_CARD; break;
-                case 3: paymentType = PaymentType.DEBIT_CARD; break;
-                case 4: paymentType = PaymentType.CASH; break;
+                case 1:
+                    paymentType = PaymentType.PIX;
+                    pixKey = ui.getInput("Digite a chave PIX");
+                    break;
+                case 2:
+                    paymentType = PaymentType.CREDIT_CARD;
+                    cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+                    installments = Integer.parseInt(ui.getInput("Digite o número de parcelas"));
+                    break;
+                case 3:
+                    paymentType = PaymentType.DEBIT_CARD;
+                    cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+                    break;
+                case 4:
+                    paymentType = PaymentType.CASH;
+                    amountReceived = Double.parseDouble(ui.getInput("Digite o valor recebido pelo aluno para cálculo de troco"));
+                    break;
                 default:
                     ui.showError("Forma de pagamento inválida. Operação abortada.");
                     return;
@@ -98,8 +115,7 @@ public class EnrollmentMenu {
 
             String description = ui.getInput("Digite uma descrição (ex: 'Mensalidade 1')");
 
-            // Delega tudo de uma vez para o FitManager coordenar
-            OperationResult result = fitManager.enrollStudent(cpf, planName, startDate, duration, amount, paymentType, description);
+            OperationResult result = fitManager.enrollStudent(cpf, planName, startDate, duration, amount, paymentType, description, pixKey, cardLastDigits, installments, amountReceived);
 
             if (result.isSuccess()) {
                 ui.showMessage(result.getMessage());
@@ -110,7 +126,7 @@ public class EnrollmentMenu {
         } catch (DateTimeParseException e) {
             ui.showError("Formato de data inválido. Use dd/mm/aaaa.");
         } catch (NumberFormatException e) {
-            ui.showError("Valor numérico inválido para duração ou pagamento.");
+            ui.showError("Entrada inválida. Duração, valor e parcelas devem ser numéricos.");
         }
     }
 
@@ -126,11 +142,29 @@ public class EnrollmentMenu {
             int typeChoice = ui.showMenu("FORMA DE PAGAMENTO", paymentOptions);
 
             PaymentType paymentType = null;
+            String pixKey = "";
+            String cardLastDigits = "";
+            int installments = 1;
+            double amountReceived = 0.0;
+
             switch (typeChoice) {
-                case 1: paymentType = PaymentType.PIX; break;
-                case 2: paymentType = PaymentType.CREDIT_CARD; break;
-                case 3: paymentType = PaymentType.DEBIT_CARD; break;
-                case 4: paymentType = PaymentType.CASH; break;
+                case 1:
+                    paymentType = PaymentType.PIX;
+                    pixKey = ui.getInput("Digite a chave PIX");
+                    break;
+                case 2:
+                    paymentType = PaymentType.CREDIT_CARD;
+                    cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+                    installments = Integer.parseInt(ui.getInput("Digite o número de parcelas"));
+                    break;
+                case 3:
+                    paymentType = PaymentType.DEBIT_CARD;
+                    cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+                    break;
+                case 4:
+                    paymentType = PaymentType.CASH;
+                    amountReceived = Double.parseDouble(ui.getInput("Digite o valor recebido pelo aluno para cálculo de troco"));
+                    break;
                 default:
                     ui.showError("Forma de pagamento inválida.");
                     return;
@@ -138,7 +172,7 @@ public class EnrollmentMenu {
 
             String description = ui.getInput("Digite uma descrição");
 
-            OperationResult result = fitManager.registerPayment(code, amount, paymentType, description);
+            OperationResult result = fitManager.registerPayment(code, amount, paymentType, description, pixKey, cardLastDigits, installments, amountReceived);
 
             if (result.isSuccess()) {
                 ui.showMessage(result.getMessage());
@@ -147,7 +181,7 @@ public class EnrollmentMenu {
             }
 
         } catch (NumberFormatException e) {
-            ui.showError("Entrada inválida. Código e valor devem ser numéricos.");
+            ui.showError("Entrada inválida. Código, valores e parcelas devem ser numéricos.");
         }
     }
 
