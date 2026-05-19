@@ -63,6 +63,25 @@ public class StudentService {
         return new OperationResult(true, "Matricula do aluno desativada com sucesso!");
     }
 
+    public OperationResult updateStudent(String cpf, String newName, String newContact) {
+        Student student = findByCPF(cpf);
+
+        if (student == null) {
+            return new OperationResult(false, "Erro: Aluno não encontrado.");
+        }
+        if (newName == null || newName.trim().isEmpty()) {
+            return new OperationResult(false, "Erro: O nome do aluno não pode ficar em branco.");
+        }
+        if (newContact == null || newContact.trim().isEmpty()) {
+            return new OperationResult(false, "Erro: O contato do aluno não pode ficar em branco.");
+        }
+        
+        student.setName(newName);
+        student.setContact(newContact);
+
+        return new OperationResult(true, "Cadastro do aluno atualizado com sucesso!");
+    }
+
     public ArrayList<Student> listStudents() {
         return this.students;
     }

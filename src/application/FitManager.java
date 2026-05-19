@@ -96,6 +96,10 @@ public class FitManager {
         return this.enrollmentService.enroll(student, plan, startDate, duration, amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
     }
 
+    public OperationResult updateStudent(String cpf, String newName, String newContact) {
+        return this.studentService.updateStudent(cpf, newName, newContact);
+    }
+
     public ArrayList<Student> listStudents() {
         return this.studentService.listStudents();
     }
