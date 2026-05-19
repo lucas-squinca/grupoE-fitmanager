@@ -1,19 +1,35 @@
 import application.FitManager;
 import ui.MainMenu;
 import ui.UserInterface;
+import ui.TerminalUI;
+import ui.JOptionPaneUI;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        // 1. Instancia a interface do usuário (a única que conversa com o console)
-        UserInterface ui = new UserInterface();
+        UserInterface ui = null;
+        Scanner scanner = new Scanner(System.in);
 
-        // 2. Instancia o FitManager do sistema (que já vai criar os serviços lá dentro dele)
+        while (ui == null) {
+            System.out.println("=== INICIALIZAÇÃO FITMANAGER ===");
+            System.out.println("Escolha a interface do sistema:");
+            System.out.println("1 - Modo Terminal (Console)");
+            System.out.println("2 - Modo Gráfico (Janelas)");
+            System.out.print("Opção: ");
+
+            String choice = scanner.nextLine();
+
+            if (choice.equals("1")) {
+                ui = new TerminalUI();
+            } else if (choice.equals("2")) {
+                ui = new JOptionPaneUI();
+            } else {
+                System.out.println("[ERRO] Opção inválida. Tente novamente.\n");
+            }
+        }
+
         FitManager fitManager = new FitManager();
-
-        // 3. Instancia o menu principal, conectando a interface e o FitManager
         MainMenu mainMenu = new MainMenu(ui, fitManager);
-
-        // 4. Inicia o sistema
         mainMenu.start();
     }
 }

@@ -28,8 +28,8 @@ public class FitManager {
         return this.planService.updatePrice(name, newPrice);
     }
 
-    public OperationResult registerPayment(int enrollmentCode, double amount, PaymentType type, String description) {
-        return this.enrollmentService.registerPayment(enrollmentCode, amount, type, description);
+    public OperationResult registerPayment(int enrollmentCode, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+        return this.enrollmentService.registerPayment(enrollmentCode, amount, type, description, pixKey, cardLastDigits, installments, amountReceived);
     }
 
     public OperationResult cancelEnrollment(int enrollmentCode) {
@@ -68,7 +68,7 @@ public class FitManager {
         return this.studentService.removeStudent(cpf);
     }
 
-    public OperationResult enrollStudent(String cpf, String planName, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription) {
+    public OperationResult enrollStudent(String cpf, String planName, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
 
         // 1. Localiza o Aluno
         Student student = this.studentService.findByCPF(cpf);
@@ -93,7 +93,11 @@ public class FitManager {
         }
 
         // 5. Delega a criação atômica para o serviço
-        return this.enrollmentService.enroll(student, plan, startDate, duration, amount, paymentType, paymentDescription);
+        return this.enrollmentService.enroll(student, plan, startDate, duration, amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
+    }
+
+    public OperationResult updateStudent(String cpf, String newName, String newContact) {
+        return this.studentService.updateStudent(cpf, newName, newContact);
     }
 
     public ArrayList<Student> listStudents() {

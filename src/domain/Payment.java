@@ -2,7 +2,7 @@ package domain;
 
 import java.time.LocalDate;
 
-public class Payment {
+public abstract class Payment {
     private LocalDate date;
     private double amount;
     private PaymentType type;
@@ -15,20 +15,15 @@ public class Payment {
         this.description = description;
     }
 
+    public LocalDate getDate() { return date; }
+    public double getAmount() { return amount; }
+    public PaymentType getType() { return type; }
+    public String getDescription() { return description; }
 
-    public LocalDate getDate() {
-        return date;
-    }
+    // MÉTODOS ABSTRATOS
+    // 1. Calcula a taxa de processamento
+    public abstract double getProcessingFee();
 
-    public double getAmount() {
-        return amount;
-    }
-
-    public PaymentType getType() {
-        return type;
-    }
-
-    public String getDescription() {
-        return description;
-    }
+    // 2. Monta o resumo formatado com os dados específicos do pagamento
+    public abstract String getPaymentSummary();
 }
