@@ -209,12 +209,17 @@ public class EnrollmentMenu {
         if (enrollment == null) {
             ui.showError("Nenhuma matrícula ativa encontrada para este aluno.");
         } else {
-            ui.showMessage("Matrícula Ativa Encontrada:");
-            System.out.println("Código: " + enrollment.getCode());
-            System.out.println("Plano: " + enrollment.getPlan().getName());
-            System.out.println("Período: " + enrollment.getStartDate() + " até " + enrollment.getEndDate());
-            System.out.printf("Valor Total: R$ %.2f\n", enrollment.getTotalPrice());
-            System.out.printf("Saldo Pendente: R$ %.2f\n", enrollment.calculateBalance());
+
+            StringBuilder dadosMatricula = new StringBuilder();
+            dadosMatricula.append("--- Matrícula Ativa Encontrada ---\n\n");
+
+            dadosMatricula.append(String.format("Código: %d\n", enrollment.getCode()));
+            dadosMatricula.append(String.format("Plano: %s\n", enrollment.getPlan().getName()));
+            dadosMatricula.append(String.format("Período: %s até %s\n", enrollment.getStartDate(), enrollment.getEndDate()));
+            dadosMatricula.append(String.format("Valor Total: R$ %.2f\n", enrollment.getTotalPrice()));
+            dadosMatricula.append(String.format("Saldo Pendente: R$ %.2f\n", enrollment.calculateBalance()));
+
+            ui.showMessage(dadosMatricula.toString());
         }
     }
 
