@@ -1,3 +1,8 @@
+## Relatórios
+### [Relatório - Etapa 1](#fitmanager--relatório-da-primeira-etapa)
+### [Relatório - Etapa 2](#fitmanager--relatório-da-segunda-etapa)
+
+----
 # FitManager — Relatório da Primeira Etapa
 
 ## 1. Introdução
@@ -403,3 +408,409 @@ A principal dificuldade técnica foi compreender e aplicar consistentemente a se
 A modelagem do fluxo de matrícula foi o ponto mais complexo do projeto: envolver três serviços, quatro classes de domínio e garantir a atomicidade da criação de `Enrollment` e `Payment` exigiu planejamento cuidadoso antes de escrever o código. A dependência entre camadas também gerou momentos de bloqueio, a camada de interface precisava que os métodos do `FitManager` estivessem definidos para poder ser implementada, o que reforçou a importância de acordar as interfaces entre camadas antes de cada um começar a programar.
 
 Como aprendizado principal, o grupo identificou que decisões de projeto tomadas cedo, como onde alocar uma validação ou como nomear um método, têm impacto direto na clareza e na manutenibilidade do código nas etapas seguintes. Documentar essas decisões ao longo do desenvolvimento, e não apenas no final, teria facilitado a escrita deste relatório.
+
+# FitManager — Relatório da Segunda Etapa
+
+## 1. Introdução
+
+Nesta segunda etapa, o sistema FitManager foi refatorado para aplicar conceitos fundamentais de Orientação a Objetos: herança, polimorfismo e interfaces Java. As principais mudanças estruturais foram a conversão da classe `Plan` e da classe `Payment` em superclasses abstratas, com a criação de quatro subclasses especializadas para cada uma, e a transformação de `UserInterface` de classe concreta em uma interface Java, permitindo duas implementações intercambiáveis, `TerminalUI` e `JOptionPaneUI`.
+
+O sistema mantém toda a base funcional construída na Etapa 1 e incorpora as novas hierarquias de forma integrada aos fluxos existentes. A funcionalidade de edição de aluno, que havia ficado pendente na etapa anterior, também foi implementada nesta entrega.
+
+---
+
+## 2. Integrantes e Contribuições
+
+| Integrante | Foco principal |
+|---|---|
+| Pedro Rodrigues Rocha | Camada de Interface: conversão de `UserInterface` em interface Java, implementação de `TerminalUI` e `JOptionPaneUI`, e atualização do `Main.java` |
+| Lucas Dias Squinca | Hierarquia de Planos: abstração de `Plan`, criação das quatro subclasses com regras de desconto e cancelamento, e atualização de `PlanService` e `PlanMenu` |
+| Luis Henrique Gonzaga Botelho | Hierarquia de Pagamentos: abstração de `Payment`, criação das quatro subclasses com atributos e regras específicas, e atualização de `EnrollmentService` e `EnrollmentMenu` |
+
+O desenvolvimento desta etapa foi mais progressivo e melhor organizado do que na etapa anterior. O grupo manteve a divisão por responsabilidades, mas com mais pontos de alinhamento ao longo do processo, o que reduziu o retrabalho na integração final e permitiu que os ajustes entre camadas fossem feitos de forma mais incremental.
+
+---
+
+## 3. Diagrama de Classes Atualizado
+
+O diagrama abaixo reflete o sistema conforme implementado. A estrutura geral segue o diagrama original proposto no enunciado, com as adaptações descritas na seção de Decisões de Projeto.
+
+```plantuml
+@startuml FitManager - Etapa 2
+
+package "ui" {
+  interface UserInterface {
+    +showMenu(title: String, options: String[]): int
+    +getInput(prompt: String): String
+    +showMessage(msg: String): void
+    +showError(msg: String): void
+  }
+
+  class TerminalUI implements UserInterface {
+    -scanner: Scanner
+  }
+
+  class JOptionPaneUI implements UserInterface {
+  }
+
+  class MainMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +start(): void
+  }
+
+  class StudentMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+
+  class PlanMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+
+  class EnrollmentMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+
+  class ReportsMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+}
+
+package "application" {
+  class FitManager {
+    -studentService: StudentService
+    -planService: PlanService
+    -enrollmentService: EnrollmentService
+    +registerStudent(...): OperationResult
+    +findStudentByCpf(cpf: String): Student
+    +updateStudent(...): OperationResult
+    +removeStudent(cpf: String): OperationResult
+    +listStudents(): ArrayList<Student>
+    +registerPlan(...): OperationResult
+    +findPlanByName(name: String): Plan
+    +updatePlanPrice(...): OperationResult
+    +listPlans(): ArrayList<Plan>
+    +enrollStudent(...): OperationResult
+    +registerPayment(...): OperationResult
+    +cancelEnrollment(code: int): OperationResult
+    +findActiveEnrollment(cpf: String): Enrollment
+    +listEnrollments(): ArrayList<Enrollment>
+  }
+
+  class StudentService {
+    -students: ArrayList<Student>
+    +registerStudent(...): OperationResult
+    +updateStudent(...): OperationResult
+    +findByCPF(cpf: String): Student
+    +removeStudent(cpf: String): OperationResult
+    +listStudents(): ArrayList<Student>
+    +cpfExists(cpf: String): boolean
+  }
+
+  class PlanService {
+    -plans: ArrayList<Plan>
+    +registerPlan(...): OperationResult
+    +findByName(name: String): Plan
+    +updatePrice(...): OperationResult
+    +listPlans(): ArrayList<Plan>
+    +nameExists(name: String): boolean
+  }
+
+  class EnrollmentService {
+    -enrollments: ArrayList<Enrollment>
+    -{static} nextCode: int
+    +enroll(...): OperationResult
+    +registerPayment(...): OperationResult
+    +cancel(code: int): OperationResult
+    +findActiveByStudent(cpf: String): Enrollment
+    +findByCode(code: int): Enrollment
+    +listEnrollments(): ArrayList<Enrollment>
+    +hasActiveEnrollment(cpf: String): boolean
+  }
+
+  class OperationResult {
+    -success: boolean
+    -message: String
+    -data: Object
+    +isSuccess(): boolean
+    +getMessage(): String
+    +getData(): Object
+  }
+}
+
+package "domain" {
+  class Student {
+    -name: String
+    -cpf: String
+    -contact: String
+    -birthDate: LocalDate
+    -active: boolean
+    +{static} validateCpf(cpf: String): boolean
+    +calculateAge(): int
+    +activate(): void
+    +deactivate(): void
+  }
+
+  abstract class Plan {
+    -name: String
+    -description: String
+    -type: PlanType
+    -minDurationMonths: int
+    -pricePerMonth: double
+    +{abstract} calculateTotalPrice(months: int): double
+    +{abstract} getCancellationFee(enrollment: Enrollment): double
+    +updatePrice(newPrice: double): void
+  }
+
+  class MonthlyPlan extends Plan {
+    +calculateTotalPrice(months: int): double
+    +getCancellationFee(enrollment: Enrollment): double
+  }
+
+  class QuarterlyPlan extends Plan {
+    +calculateTotalPrice(months: int): double
+    +getCancellationFee(enrollment: Enrollment): double
+  }
+
+  class SemiAnnualPlan extends Plan {
+    +calculateTotalPrice(months: int): double
+    +getCancellationFee(enrollment: Enrollment): double
+  }
+
+  class AnnualPlan extends Plan {
+    +calculateTotalPrice(months: int): double
+    +getCancellationFee(enrollment: Enrollment): double
+  }
+
+  class Enrollment {
+    -code: int
+    -student: Student
+    -plan: Plan
+    -startDate: LocalDate
+    -endDate: LocalDate
+    -durationMonths: int
+    -totalPrice: double
+    -status: EnrollmentStatus
+    -payments: ArrayList<Payment>
+    +registerPayment(payment: Payment): void
+    +calculateTotalPaid(): double
+    +calculateBalance(): double
+    +cancel(): void
+  }
+
+  abstract class Payment {
+    -date: LocalDate
+    -amount: double
+    -type: PaymentType
+    -description: String
+    +{abstract} getProcessingFee(): double
+    +{abstract} getPaymentSummary(): String
+  }
+
+  class PixPayment extends Payment {
+    -pixKey: String
+    +getProcessingFee(): double
+    +getPaymentSummary(): String
+  }
+
+  class CreditCardPayment extends Payment {
+    -installments: int
+    -cardLastDigits: String
+    +getProcessingFee(): double
+    +getPaymentSummary(): String
+  }
+
+  class DebitCardPayment extends Payment {
+    -cardLastDigits: String
+    +getProcessingFee(): double
+    +getPaymentSummary(): String
+  }
+
+  class CashPayment extends Payment {
+    -amountReceived: double
+    +getProcessingFee(): double
+    +getPaymentSummary(): String
+  }
+
+  enum PlanType {
+    MONTHLY
+    QUARTERLY
+    SEMI_ANNUAL
+    ANNUAL
+  }
+
+  enum PaymentType {
+    PIX
+    CREDIT_CARD
+    DEBIT_CARD
+    CASH
+  }
+
+  enum EnrollmentStatus {
+    ACTIVE
+    CANCELLED
+  }
+}
+
+MainMenu --> UserInterface
+MainMenu --> FitManager
+StudentMenu --> UserInterface
+StudentMenu --> FitManager
+PlanMenu --> UserInterface
+PlanMenu --> FitManager
+EnrollmentMenu --> UserInterface
+EnrollmentMenu --> FitManager
+ReportsMenu --> UserInterface
+ReportsMenu --> FitManager
+
+FitManager *-- StudentService
+FitManager *-- PlanService
+FitManager *-- EnrollmentService
+
+EnrollmentService --> Enrollment
+Enrollment --> Plan
+Enrollment "1" *-- "0..*" Payment
+Enrollment --> EnrollmentStatus
+Plan --> PlanType
+Payment --> PaymentType
+
+@enduml
+```
+
+---
+
+## 4. Decisões de Projeto
+
+### 4.1 Interface Java em vez de classe abstrata para `UserInterface`
+
+**Decisão:** `UserInterface` foi convertida em uma interface Java pura, implementada por `TerminalUI` e `JOptionPaneUI`.
+
+**Alternativas consideradas:** Converter em classe abstrata com implementações padrão para os métodos comuns.
+
+**Justificativa:** `TerminalUI` e `JOptionPaneUI` não compartilham nenhum estado interno (atributos) nem lógica de implementação, cada uma resolve os quatro métodos do contrato de forma completamente independente. Uma classe abstrata seria adequada se houvesse comportamento comum a reutilizar, o que não é o caso aqui. A interface estabelece um contrato rígido sem acoplar as implementações, e os menus continuam referenciando apenas o tipo `UserInterface`, sem precisar conhecer qual implementação está em uso, o que é exatamente o Princípio Aberto/Fechado: adicionar uma nova implementação de UI no futuro não exige nenhuma alteração nos menus.
+
+**Impacto:** Todos os menus foram mantidos sem alteração em sua lógica interna. A escolha da implementação de `UserInterface` ocorre em um único ponto, na inicialização do sistema em `Main`, o que torna a troca trivial.
+
+---
+
+### 4.2 Manutenção dos enums `PlanType` e `PaymentType`
+
+**Decisão:** Os enums `PlanType` e `PaymentType` foram mantidos no sistema mesmo após a criação das subclasses concretas.
+
+**Alternativas consideradas:** Eliminar os enums, deixando que a própria hierarquia de classes represente o tipo do plano ou pagamento.
+
+**Justificativa:** Os enums cumprem um papel diferente das subclasses: eles atuam como seletores seguros nos Factory Methods de `PlanService` e `EnrollmentService`, permitindo que a camada de interface comunique a escolha do usuário sem precisar conhecer as subclasses concretas. Sem os enums, os menus precisariam importar e instanciar `AnnualPlan`, `PixPayment` e afins diretamente, violando a separação de camadas. Com os enums, o menu passa `PlanType.ANNUAL` ao `FitManager`, que delega ao serviço, que instancia a subclasse correta. Isso mantém a interface desacoplada do domínio e previne erros de digitação ou escolhas inválidas.
+
+**Impacto:** Os Factory Methods em `PlanService` e `EnrollmentService` usam `switch` sobre o enum para instanciar a subclasse correta. Essa estrutura condicional é o ponto que será eliminado em etapas futuras, caso o padrão Factory Method seja formalizado, o que foi documentado como ponto de extensão planejado.
+
+---
+
+### 4.3 Validação de `CashPayment` no `EnrollmentService`, antes da instanciação
+
+**Decisão:** A validação de que o valor recebido em dinheiro (`amountReceived`) não pode ser inferior ao valor cobrado (`amount`) é feita no `EnrollmentService`, antes de o objeto `CashPayment` ser criado.
+
+**Alternativas consideradas:** Realizar a validação no construtor de `CashPayment`, lançando uma exceção caso o valor seja inválido.
+
+**Justificativa:** O padrão estabelecido na Etapa 1 é que os serviços retornam `OperationResult` com `success = false` para operações inválidas, sem lançar exceções para o usuário final. Manter a validação no serviço preserva esse contrato: o menu recebe um `OperationResult` descritivo e exibe a mensagem de erro via `ui.showError()`. Lançar uma exceção no construtor quebraria o fluxo esperado pelos menus e introduziria um tratamento de erro inconsistente com o restante do sistema.
+
+**Impacto:** `CashPayment` é instanciado apenas quando os dados já foram validados, garantindo que nenhum objeto em estado inválido seja adicionado ao histórico de pagamentos.
+
+---
+
+### 4.4 `getPaymentSummary()` como contrato de domínio, separado de `toString()`
+
+**Decisão:** O método abstrato `getPaymentSummary()` foi definido na superclasse `Payment` e implementado por cada subclasse para formatar a exibição dos dados financeiros ao usuário. O `toString()` foi preservado para uso técnico.
+
+**Alternativas consideradas:** Sobrescrever `toString()` em cada subclasse para exibir as informações ao usuário.
+
+**Justificativa:** `toString()` tem uma semântica definida em Java: é usado para representação textual de objetos em contextos técnicos, como depuração, logs e concatenação implícita. Utilizá-lo para formatação de saída ao usuário mistura responsabilidades. O método `getPaymentSummary()` expressa uma regra de negócio explícita — "como este pagamento deve ser apresentado no contexto da academia" — e é invocado intencionalmente, nunca de forma implícita. Essa separação torna o código mais legível e evita comportamentos inesperados caso `toString()` seja chamado em outros contextos.
+
+**Impacto:** O `EnrollmentMenu` itera sobre a lista de pagamentos chamando `p.getPaymentSummary()` para cada um. Cada subclasse retorna sua string formatada com os atributos específicos — `PixPayment` inclui a chave PIX, `CreditCardPayment` inclui parcelas e últimos dígitos, `CashPayment` inclui o troco — sem que o menu precise saber com qual subclasse está lidando.
+
+---
+
+### 4.5 Encapsulamento das regras de desconto e cancelamento nas subclasses de `Plan`
+
+**Decisão:** As regras de cálculo de preço total e de taxa de cancelamento foram encapsuladas nos métodos `calculateTotalPrice()` e `getCancellationFee()` de cada subclasse, sem lógica condicional baseada em tipo na superclasse ou nos serviços.
+
+**Alternativas consideradas:** Manter um único método em `Plan` com estrutura `if/else` ou `switch` sobre `PlanType`.
+
+**Justificativa:** A estrutura condicional por tipo é exatamente o problema que o polimorfismo resolve. Cada subclasse conhece suas próprias regras e as aplica sem precisar consultar o tipo do objeto. Isso elimina a necessidade de alterar a superclasse ou os serviços quando uma nova regra de negócio for introduzida em um tipo específico de plano — basta modificar a subclasse correspondente. O `EnrollmentService` chama `enrollment.getPlan().getCancellationFee(enrollment)` sem precisar saber se o plano é anual, trimestral ou mensal.
+
+**Impacto:** O fluxo de cancelamento ficou significativamente simplificado: o serviço delega o cálculo da taxa ao plano, que responde de acordo com suas próprias regras, e o resultado é incorporado ao resumo financeiro exibido ao usuário.
+
+---
+
+### 4.6 Correção do vazamento de saída nos menus (`System.out` → `ui.showMessage()`)
+
+**Decisão:** Todos os pontos onde os menus usavam `System.out.printf` ou `System.out.println` diretamente foram refatorados para usar `ui.showMessage()`.
+
+**Contexto:** Na Etapa 1, havia chamadas diretas a `System.out` em alguns métodos dos menus, identificadas como violação da separação de camadas. Durante a integração da implementação `JOptionPaneUI` nesta etapa, o problema se tornou evidente: as listagens continuavam sendo impressas no terminal mesmo quando o modo gráfico estava ativo.
+
+**Solução adotada:** Os métodos de listagem foram refatorados para montar o conteúdo em memória usando `StringBuilder` e `String.format()`, e então entregar o texto completo a `ui.showMessage()`. Isso garante que a exibição seja tratada pela implementação de `UserInterface` ativa, independentemente de qual for.
+
+**Impacto:** O sistema agora funciona de forma completamente consistente em ambas as implementações de interface, sem nenhum vazamento de saída para o console quando `JOptionPaneUI` está em uso.
+
+---
+
+## 5. Como o Polimorfismo Simplificou o Código
+
+O impacto do polimorfismo ficou evidente em dois pontos centrais do sistema:
+
+**Cancelamento de matrícula (`EnrollmentService`):** Em vez de usar estruturas condicionais para verificar o tipo do plano e calcular a taxa de cancelamento, o serviço executa diretamente `enrollment.getPlan().getCancellationFee(enrollment)`. A decisão de aplicar multa de 20% (plano anual, cancelamento antes da metade do período) ou retornar zero (demais planos) fica completamente encapsulada nas subclasses. O serviço não precisa conhecer as regras de cada tipo.
+
+**Exibição do histórico de pagamentos (`EnrollmentMenu`):** O menu não precisa verificar se o pagamento é PIX (exibe chave), cartão de crédito (exibe parcelas e últimos dígitos) ou dinheiro (exibe troco). O laço de repetição invoca `p.getPaymentSummary()` para cada pagamento, e cada subclasse de `Payment` devolve sua string formatada de acordo com seus atributos específicos.
+
+---
+
+## 6. Regras de Negócio Implementadas
+
+### Hierarquia de Planos
+
+| Subclasse | Desconto | Taxa de Cancelamento |
+|---|---|---|
+| `MonthlyPlan` | Nenhum | 0% |
+| `QuarterlyPlan` | 5% sobre o valor total bruto, se duração ≥ mínimo do plano | 0% |
+| `SemiAnnualPlan` | 10% sobre o valor total bruto, se duração ≥ mínimo do plano | 0% |
+| `AnnualPlan` | 15% sobre o valor total bruto, se duração ≥ mínimo do plano | 20% do valor total, se cancelamento ocorrer antes da metade do período contratado |
+
+O cálculo da taxa de cancelamento do `AnnualPlan` utiliza `ChronoUnit.MONTHS` da API `LocalDate` para determinar o número de meses decorridos desde o início da matrícula.
+
+### Hierarquia de Pagamentos
+
+| Subclasse | Atributos específicos | Taxa de processamento | Comportamento adicional |
+|---|---|---|---|
+| `PixPayment` | `pixKey` | 0% | Exibe a chave PIX no resumo |
+| `CreditCardPayment` | `installments`, `cardLastDigits` | Simulada (positiva) | Exibe parcelas e últimos dígitos no resumo |
+| `DebitCardPayment` | `cardLastDigits` | Simulada (positiva) | Exibe últimos dígitos no resumo |
+| `CashPayment` | `amountReceived` | 0% | Valida que valor recebido ≥ valor cobrado; exibe troco no resumo |
+
+### Funcionalidade recuperada da Etapa 1
+
+- **Edição de aluno:** Implementada nesta etapa. O `StudentMenu` permite atualizar nome e contato de um aluno já cadastrado, com a operação delegada ao `StudentService` via `FitManager`.
+
+---
+
+## 7. Dificuldades e Aprendizados
+
+**Integração das duas implementações de `UserInterface`**
+
+A principal dificuldade técnica desta etapa foi a integração da `JOptionPaneUI`. O problema do vazamento de saída para o console — descrito na seção 4.6 — só ficou evidente durante os testes com a interface gráfica ativa, pois no modo terminal o comportamento parecia correto. Isso reforçou na prática a importância de testar o sistema com todas as implementações possíveis de uma interface, e não apenas com a mais familiar.
+
+A refatoração para usar `StringBuilder` e `ui.showMessage()` nas listagens foi trabalhosa por envolver vários métodos distribuídos nos menus, mas o resultado final ficou mais limpo e coeso do que antes.
+
+**Modelagem das hierarquias**
+
+Definir onde alocar a lógica de desconto — se na superclasse, nas subclasses ou no serviço — exigiu discussão. A tentação inicial era manter um `switch` no `PlanService`, o que teria preservado a estrutura da Etapa 1 com menor esforço. A decisão de mover a lógica para as subclasses foi mais trabalhosa de implementar, mas tornou o cancelamento e o cálculo de preço muito mais simples nos serviços.
+
+**Organização e evolução em relação à Etapa 1**
+
+O desenvolvimento desta etapa foi mais progressivo e melhor organizado. O grupo manteve a divisão de responsabilidades por camada, mas com mais pontos de alinhamento ao longo do processo — o que reduziu o retrabalho na integração e permitiu que incompatibilidades entre camadas fossem identificadas e corrigidas mais cedo. A experiência da Etapa 1 mostrou que alinhar os contratos entre camadas antes de implementar é mais eficiente do que descobrir incompatibilidades na integração final.
