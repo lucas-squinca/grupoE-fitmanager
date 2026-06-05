@@ -108,20 +108,20 @@ public class EnrollmentService {
         return new OperationResult(true, "Pagamento registrado com sucesso!");
     }
     // Fluxo 5: Cancelar Matrícula
-    public OperationResult cancel(int code) {
+    public OperationResult<Void> cancel(int code) {
         Enrollment enrollment = findByCode(code);
 
         if (enrollment == null) {
-            return new OperationResult(false, "Erro: Matrícula não encontrada.");
+            return new OperationResult<>(false, "Erro: Matrícula não encontrada.");
         }
 
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-            return new OperationResult(false, "Erro: Esta matrícula já está cancelada.");
+            return new OperationResult<>(false, "Erro: Esta matrícula já está cancelada.");
         }
 
         // Chama o método da classe de domínio para trocar o status de forma segura
         enrollment.cancel();
-        return new OperationResult(true, "Matrícula cancelada com sucesso!");
+        return new OperationResult<>(true, "Matrícula cancelada com sucesso!");
     }
 
     // Listar todas as matrículas
