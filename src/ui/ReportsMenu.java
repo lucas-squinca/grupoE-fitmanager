@@ -1,6 +1,7 @@
 package ui;
 
 import application.FitManager;
+import application.OperationResult;
 import domain.Enrollment;
 import domain.Plan;
 import domain.Student;
@@ -21,6 +22,7 @@ public class ReportsMenu {
                 "Relatório de Alunos",
                 "Relatório de Planos",
                 "Relatório de Matrículas",
+                "Relatório Financeiro Mensal",
                 "Voltar"
         };
 
@@ -40,6 +42,9 @@ public class ReportsMenu {
                     reportEnrollments();
                     break;
                 case 4:
+                    generateFinancialReport();
+                    break;
+                case 5:
                     running = false;
                     break;
                 default:
@@ -51,43 +56,39 @@ public class ReportsMenu {
     // MÉTODOS DE CADA RELATÓRIO
 
     private void reportStudents() {
-        ArrayList<Student> students = fitManager.listStudents();
+        OperationResult<ArrayList<Student>> listResult = fitManager.listStudents();
+        ArrayList<Student> students = listResult.getData();
 
         if (students.isEmpty()) {
-            ui.showMessage("Não existem alunos registados no sistema.");
+            ui.showMessage("Não existem alunos registrados no sistema.");
             return;
         }
 
-        // 1. Cria o construtor de texto
         StringBuilder relatorio = new StringBuilder();
         relatorio.append("--- RELATÓRIO GERAL DE ALUNOS ---\n");
 
-        // 2. Acumula os dados linha por linha
         for (Student s : students) {
             String status = s.isActive() ? "ATIVO" : "INATIVO";
-
-            // Usa String.format para montar o texto formatado e anexa no StringBuilder
             String linha = String.format("Nome: %-20s | CPF: %-14s | Idade: %02d anos | Status: %s\n",
                     s.getName(), s.getCpf(), s.calculateAge(), status);
             relatorio.append(linha);
         }
 
-        // Manda a interface (seja ela Terminal ou JOptionPane) para exibir o texto no final.
         ui.showMessage(relatorio.toString());
     }
 
     private void reportPlans() {
-        ArrayList<Plan> plans = fitManager.listPlans();
+        OperationResult<ArrayList<Plan>> listResult = fitManager.listPlans();
+        ArrayList<Plan> plans = listResult.getData();
 
         if (plans.isEmpty()) {
-            ui.showMessage("Não existem planos registados no sistema.");
+            ui.showMessage("Não existem planos registrados no sistema.");
             return;
         }
 
         StringBuilder relatorio = new StringBuilder();
         relatorio.append("--- RELATÓRIO GERAL DE PLANOS ---\n");
         for (Plan p : plans) {
-            // Calcula o preço base total apenas para exibição no relatório
             double totalBase = p.calculateTotalPrice(p.getMinDurationMonths());
             String linha = String.format("Plano: %-15s (%-10s) | Mínimo: %02d meses | R$ %6.2f/mês | Total Base: R$ %7.2f\n",
                     p.getName(), p.getType(), p.getMinDurationMonths(), p.getPricePerMonth(), totalBase);
@@ -99,10 +100,11 @@ public class ReportsMenu {
     }
 
     private void reportEnrollments() {
-        ArrayList<Enrollment> enrollments = fitManager.listEnrollments();
+        OperationResult<ArrayList<Enrollment>> listResult = fitManager.listEnrollments();
+        ArrayList<Enrollment> enrollments = listResult.getData();
 
         if (enrollments.isEmpty()) {
-            ui.showMessage("Não existem matrículas registadas no sistema.");
+            ui.showMessage("Não existem matrículas registradas no sistema.");
             return;
         }
 
@@ -116,5 +118,9 @@ public class ReportsMenu {
         }
 
         ui.showMessage(relatorio.toString());
+    }
+
+    private void generateFinancialReport() {
+        ui.showMessage("O Relatório Financeiro será implementado na última fase desta etapa!");
     }
 }
