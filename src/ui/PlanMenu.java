@@ -58,7 +58,6 @@ public class PlanMenu {
         String name = ui.getInput("Digite o nome do plano");
         String description = ui.getInput("Digite a descrição");
 
-        // Captura do Enum usando a sua própria interface robusta
         String[] typeOptions = {"Mensal", "Trimestral", "Semestral", "Anual"};
         int typeChoice = ui.showMenu("SELECIONE O TIPO", typeOptions);
 
@@ -70,37 +69,54 @@ public class PlanMenu {
             case 4: type = PlanType.ANNUAL; break;
             default:
                 ui.showError("Opção de tipo inválida. Operação cancelada.");
-                return; // Aborta e volta pro menu de planos
+                return;
         }
 
-        try {
-            String durationStr = ui.getInput("Digite a duração mínima em meses");
-            int minDuration = Integer.parseInt(durationStr);
+        int minDuration = -1;
+        double pricePerMonth = -1.0;
 
-            String priceStr = ui.getInput("Digite o preço por mês (ex: 99.90)");
-            double pricePerMonth = Double.parseDouble(priceStr);
-
-            // Delega para o FitManager
-            OperationResult result = fitManager.registerPlan(name, description, type, minDuration, pricePerMonth);
-
-            if (result.isSuccess()) {
-                ui.showMessage(result.getMessage());
-            } else {
-                ui.showError(result.getMessage());
+        boolean validDuration = false;
+        while (!validDuration) {
+            try {
+                String durationStr = ui.getInput("Digite a duração mínima em meses");
+                minDuration = Integer.parseInt(durationStr);
+                validDuration = true;
+            } catch (NumberFormatException e) {
+                ui.showError("Erro: A duração deve ser um número inteiro. Tente novamente.");
             }
+        }
 
-        } catch (NumberFormatException e) {
-            ui.showError("Erro: Duração deve ser um número inteiro e o preço deve ser numérico (use '.' para centavos).");
+        boolean validPrice = false;
+        while (!validPrice) {
+            try {
+                String priceStr = ui.getInput("Digite o preço por mês (ex: 99.90)");
+                pricePerMonth = Double.parseDouble(priceStr);
+                validPrice = true;
+            } catch (NumberFormatException e) {
+                ui.showError("Erro: O preço deve ser um valor numérico válido (use '.' para centavos). Tente novamente.");
+            }
+        }
+
+        OperationResult<Plan> result = fitManager.registerPlan(name, description, type, minDuration, pricePerMonth);
+
+        if (result.isSuccess()) {
+            ui.showMessage(result.getMessage());
+        } else {
+            ui.showError(result.getMessage());
         }
     }
 
     private void consultPlan() {
         String name = ui.getInput("Digite o nome do plano para consulta");
-        Plan plan = fitManager.findPlanByName(name);
 
-        if (plan == null) {
-            ui.showError("Nenhum plano encontrado com este nome.");
+        OperationResult<Plan> searchResult = fitManager.findPlanByName(name);
+
+        if (!searchResult.isSuccess()) {
+            ui.showError(searchResult.getMessage());
         } else {
+            // Extrai o plano do resultado
+            Plan plan = searchResult.getData();
+
             StringBuilder dadosPlano = new StringBuilder();
             dadosPlano.append("--- Dados do Plano ---\n\n");
 
@@ -118,24 +134,31 @@ public class PlanMenu {
     private void updatePrice() {
         String name = ui.getInput("Digite o nome do plano que deseja alterar");
 
-        try {
-            String newPriceStr = ui.getInput("Digite o novo preço (ex: 120.00)");
-            double newPrice = Double.parseDouble(newPriceStr);
+        double newPrice = -1.0;
 
-            OperationResult result = fitManager.updatePlanPrice(name, newPrice);
-
-            if (result.isSuccess()) {
-                ui.showMessage(result.getMessage());
-            } else {
-                ui.showError(result.getMessage());
+        boolean validPrice = false;
+        while (!validPrice) {
+            try {
+                String newPriceStr = ui.getInput("Digite o novo preço (ex: 120.00)");
+                newPrice = Double.parseDouble(newPriceStr);
+                validPrice = true;
+            } catch (NumberFormatException e) {
+                ui.showError("Erro: O preço deve ser um valor numérico válido. Tente novamente.");
             }
-        } catch (NumberFormatException e) {
-            ui.showError("Erro: O preço deve ser um valor numérico válido.");
+        }
+
+        OperationResult<Void> result = fitManager.updatePlanPrice(name, newPrice);
+
+        if (result.isSuccess()) {
+            ui.showMessage(result.getMessage());
+        } else {
+            ui.showError(result.getMessage());
         }
     }
 
     private void listPlans() {
-        ArrayList<Plan> plans = fitManager.listPlans();
+        OperationResult<ArrayList<Plan>> listResult = fitManager.listPlans();
+        ArrayList<Plan> plans = listResult.getData();
 
         if (plans.isEmpty()) {
             ui.showMessage("Não existem planos registados no sistema.");
@@ -145,7 +168,6 @@ public class PlanMenu {
         StringBuilder relatorio = new StringBuilder();
         relatorio.append("--- RELATÓRIO GERAL DE PLANOS ---\n");
         for (Plan p : plans) {
-            // Calcula o preço base total apenas para exibição no relatório
             double totalBase = p.calculateTotalPrice(p.getMinDurationMonths());
             String linha = String.format("Plano: %-15s (%-10s) | Mínimo: %02d meses | R$ %6.2f/mês | Total Base: R$ %7.2f\n",
                     p.getName(), p.getType(), p.getMinDurationMonths(), p.getPricePerMonth(), totalBase);
