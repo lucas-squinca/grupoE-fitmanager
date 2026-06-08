@@ -1,5 +1,6 @@
 package persistence;
 
+import exceptions.PersistenceException;
 import java.util.ArrayList;
 
 public abstract class Repository<T> {
@@ -24,4 +25,7 @@ public abstract class Repository<T> {
 
     public abstract void save(String filePath);
     public abstract void load(String filePath);
+
+    public abstract void save(String filePath) throws PersistenceException;
+    public abstract void load(String filePath) throws PersistenceException;
 }
