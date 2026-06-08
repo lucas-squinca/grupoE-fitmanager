@@ -1,7 +1,7 @@
 package application;
 
 import domain.*;
-import persistence.Repository; // 1. Import do repositório
+import persistence.Repository;
 import java.util.ArrayList;
 
 public class PlanService extends Repository<Plan> {
