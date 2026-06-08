@@ -45,6 +45,7 @@ public class PlanService extends Repository<Plan> {
         if (!searchResult.isSuccess()) {
             return new OperationResult<>(false, searchResult.getMessage());
         }
+
         if (newPrice <= 0) {
             return new OperationResult<>(false, "Erro: O novo preço deve ser maior que zero.");
         }
