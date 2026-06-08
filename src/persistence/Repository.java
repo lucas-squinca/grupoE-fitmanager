@@ -23,9 +23,6 @@ public abstract class Repository<T> {
         return this.elements;
     }
 
-    public abstract void save(String filePath);
-    public abstract void load(String filePath);
-
     public abstract void save(String filePath) throws PersistenceException;
     public abstract void load(String filePath) throws PersistenceException;
 }
