@@ -10,12 +10,12 @@ public class PlanService {
         this.plans = new ArrayList<>();
     }
 
-    public OperationResult registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
+    public OperationResult<Plan> registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
         if (name == null || name.trim().isEmpty() || type == null) {
-            return new OperationResult(false, "Erro: Nome e tipo são obrigatórios.");
+            return new OperationResult<>(false, "Erro: Nome e tipo são obrigatórios.");
         }
         if (nameExists(name)) {
-            return new OperationResult(false, "Erro: Já existe um plano com este nome.");
+            return new OperationResult<>(false, "Erro: Já existe um plano com este nome.");
         }
 
         Plan newPlan = null;
@@ -36,34 +36,41 @@ public class PlanService {
         }
 
         this.plans.add(newPlan);
-        return new OperationResult(true, "Plano cadastrado com sucesso!", newPlan);
+        return new OperationResult<>(true, "Plano cadastrado com sucesso!", newPlan);
     }
 
-    public OperationResult updatePrice(String name, double newPrice) {
-        Plan plan = findByName(name);
-        if (plan == null) {
-            return new OperationResult(false, "Erro: Plano não encontrado.");
-        }
-        if (newPrice <= 0) {
-            return new OperationResult(false, "Erro: O novo preço deve ser maior que zero.");
+    public OperationResult<Void> updatePrice(String name, double newPrice) {
+
+        OperationResult<Plan> searchResult = findByName(name);
+
+        if (!searchResult.isSuccess()) {
+            return new OperationResult<>(false, searchResult.getMessage());
         }
 
+        if (newPrice <= 0) {
+            return new OperationResult<>(false, "Erro: O novo preço deve ser maior que zero.");
+        }
+
+        Plan plan = searchResult.getData();
         plan.updatePrice(newPrice);
-        return new OperationResult(true, "Preço do plano atualizado com sucesso!");
+
+        return new OperationResult<>(true, "Preço do plano atualizado com sucesso!");
     }
 
     public ArrayList<Plan> listPlans() {
         return this.plans;
     }
 
-    public Plan findByName(String name) {
+    public OperationResult<Plan> findByName(String name) {
         for (Plan p : plans) {
-            if (p.getName().equalsIgnoreCase(name)) return p;
+            if (p.getName().equalsIgnoreCase(name)) {
+                return new OperationResult<>(true, "Plano encontrado.", p);
+            }
         }
-        return null;
+        return new OperationResult<>(false, "Erro: Plano não encontrado.");
     }
 
-    private boolean nameExists(String name) {
-        return findByName(name) != null;
+    public boolean nameExists(String name) {
+        return findByName(name).isSuccess();
     }
 }

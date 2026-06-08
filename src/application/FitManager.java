@@ -5,6 +5,7 @@ import domain.PaymentType;
 import domain.Student;
 import domain.Plan;
 import domain.Enrollment;
+import domain.Payment;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,99 +21,100 @@ public class FitManager {
         this.enrollmentService = new EnrollmentService();
     }
 
-    public OperationResult registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
+    public OperationResult<Plan> registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
         return this.planService.registerPlan(name, description, type, minDurationMonths, pricePerMonth);
     }
 
-    public OperationResult updatePlanPrice(String name, double newPrice) {
+    public OperationResult<Void> updatePlanPrice(String name, double newPrice) {
         return this.planService.updatePrice(name, newPrice);
     }
 
-    public OperationResult registerPayment(int enrollmentCode, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+    public OperationResult<Payment> registerPayment(int enrollmentCode, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
         return this.enrollmentService.registerPayment(enrollmentCode, amount, type, description, pixKey, cardLastDigits, installments, amountReceived);
     }
 
-    public OperationResult cancelEnrollment(int enrollmentCode) {
+    public OperationResult<Void> cancelEnrollment(int enrollmentCode) {
         return this.enrollmentService.cancel(enrollmentCode);
     }
 
-    // Registra o aluno
-    public OperationResult registerStudent(String name, String cpf, String contact, LocalDate birthDate) {
+    public OperationResult<Student> registerStudent(String name, String cpf, String contact, LocalDate birthDate) {
         return this.studentService.registerStudent(name, cpf, contact, birthDate);
     }
 
-    // Busca estudante por CPF
-    public Student findStudentByCpf(String cpf) {
+    public OperationResult<Student> findStudentByCpf(String cpf) {
         return this.studentService.findByCPF(cpf);
     }
 
-    // Busca plano por nome
-    public Plan findPlanByName(String name) {
+    public OperationResult<Plan> findPlanByName(String name) {
         return this.planService.findByName(name);
     }
 
-    // Fluxo 6: Excluir Aluno
-    public OperationResult removeStudent(String cpf) {
-        // 1. Verifica se o aluno existe
-        Student student = this.studentService.findByCPF(cpf);
-        if (student == null) {
-            return new OperationResult(false, "Erro: Aluno não encontrado.");
+    public OperationResult<Void> removeStudent(String cpf) {
+        // 1. Busca o aluno
+        OperationResult<Student> searchResult = this.studentService.findByCPF(cpf);
+
+        if (!searchResult.isSuccess()) {
+            return new OperationResult<>(false, searchResult.getMessage());
         }
 
         // 2. Verifica se o aluno tem matrícula ativa
         if (this.enrollmentService.hasActiveEnrollment(cpf)) {
-            return new OperationResult(false, "Erro: Não é possível remover um aluno com matrícula ativa.");
+            return new OperationResult<>(false, "Erro: Não é possível remover um aluno com matrícula ativa.");
         }
 
         // 3. Se tudo estiver certo, manda o serviço de aluno desativar
         return this.studentService.removeStudent(cpf);
     }
 
-    public OperationResult enrollStudent(String cpf, String planName, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+    public OperationResult<Enrollment> enrollStudent(String cpf, String planName, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
 
-        // 1. Localiza o Aluno
-        Student student = this.studentService.findByCPF(cpf);
-        if (student == null) {
-            return new OperationResult(false, "Erro: Aluno não encontrado.");
+        // 1. Localiza o Aluno e já trata se der erro
+        OperationResult<Student> studentResult = this.studentService.findByCPF(cpf);
+        if (!studentResult.isSuccess()) {
+            return new OperationResult<>(false, studentResult.getMessage());
         }
 
-        // 2. Localiza o Plano
-        Plan plan = this.planService.findByName(planName);
-        if (plan == null) {
-            return new OperationResult(false, "Erro: Plano não encontrado.");
+        // 2. Localiza o Plano e já trata se der erro
+        OperationResult<Plan> planResult = this.planService.findByName(planName);
+        if (!planResult.isSuccess()) {
+            return new OperationResult<>(false, planResult.getMessage());
         }
 
         // 3. Verifica se o aluno JÁ TEM matrícula ativa
         if (this.enrollmentService.hasActiveEnrollment(cpf)) {
-            return new OperationResult(false, "Erro: Este aluno já possui uma matrícula ativa.");
+            return new OperationResult<>(false, "Erro: Este aluno já possui uma matrícula ativa.");
         }
 
         // 4. Valida se o pagamento inicial é positivo
         if (amount <= 0) {
-            return new OperationResult(false, "Erro: O pagamento inicial deve ser maior que zero.");
+            return new OperationResult<>(false, "Erro: O pagamento inicial deve ser maior que zero.");
         }
 
-        // 5. Delega a criação atômica para o serviço
+        // 5. Extrai os dados usando getData()
+        Student student = studentResult.getData();
+        Plan plan = planResult.getData();
+
+        // 6. Delega a criação atômica para o serviço
         return this.enrollmentService.enroll(student, plan, startDate, duration, amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
     }
 
-    public OperationResult updateStudent(String cpf, String newName, String newContact) {
+    public OperationResult<Void> updateStudent(String cpf, String newName, String newContact) {
         return this.studentService.updateStudent(cpf, newName, newContact);
     }
 
-    public ArrayList<Student> listStudents() {
-        return this.studentService.listStudents();
+    public OperationResult<ArrayList<Student>> listStudents() {
+        return new OperationResult<>(true, "Lista de alunos carregada.", this.studentService.listStudents());
     }
 
-    public ArrayList<Plan> listPlans() {
-        return this.planService.listPlans();
+    public OperationResult<ArrayList<Plan>> listPlans() {
+        return new OperationResult<>(true, "Lista de planos carregada.", this.planService.listPlans());
     }
 
-    public ArrayList<Enrollment> listEnrollments() {
-        return this.enrollmentService.listEnrollments();
+    public OperationResult<ArrayList<Enrollment>> listEnrollments() {
+        return new OperationResult<>(true, "Lista de matrículas carregada.", this.enrollmentService.listEnrollments());
     }
 
-    public Enrollment findActiveEnrollment(String cpf) {
+    public OperationResult<Enrollment> findActiveEnrollment(String cpf) {
         return this.enrollmentService.findActiveByStudent(cpf);
     }
 }
