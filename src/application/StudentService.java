@@ -1,18 +1,17 @@
 package application;
 
 import domain.Student;
+import persistence.Repository;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
-public class StudentService {
-    private ArrayList<Student> students;
+public class StudentService extends Repository<Student> {
 
     public StudentService() {
-        this.students = new ArrayList<>();
+        super();
     }
 
     public boolean cpfExists(String cpf) {
-        for (Student student : students) {
+        for (Student student : this.elements) {
             if(student.getCpf().equals(cpf)){
                 return true;
             }
@@ -34,18 +33,18 @@ public class StudentService {
         }
 
         Student newStudent = new Student(name, cpf, contact, birthDate);
-        this.students.add(newStudent);
+
+        this.add(newStudent);
 
         return new OperationResult<>(true, "Aluno registrado com sucesso!", newStudent);
     }
 
     public OperationResult<Student> findByCPF(String cpf) {
-        for (Student student : students) {
+        for (Student student : this.elements) {
             if(student.getCpf().equals(cpf)){
                 return new OperationResult<>(true, "Aluno encontrado com sucesso.", student);
             }
         }
-        // Quando não encontra, o 'data' é nulo
         return new OperationResult<>(false, "Erro: Aluno não encontrado.");
     }
 
@@ -56,7 +55,6 @@ public class StudentService {
             return new OperationResult<>(false, searchResult.getMessage());
         }
 
-        // Extrai o aluno do resultado da busca usando getData()
         Student student = searchResult.getData();
         student.deactivate();
 
@@ -85,7 +83,11 @@ public class StudentService {
         return new OperationResult<>(true, "Cadastro do aluno atualizado com sucesso!");
     }
 
-    public ArrayList<Student> listStudents() {
-        return this.students;
+    @Override
+    public void save(String filePath) {
+    }
+
+    @Override
+    public void load(String filePath) {
     }
 }

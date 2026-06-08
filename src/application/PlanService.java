@@ -1,13 +1,13 @@
 package application;
 
 import domain.*;
+import persistence.Repository;
 import java.util.ArrayList;
 
-public class PlanService {
-    private ArrayList<Plan> plans;
+public class PlanService extends Repository<Plan> {
 
     public PlanService() {
-        this.plans = new ArrayList<>();
+        super();
     }
 
     public OperationResult<Plan> registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
@@ -35,12 +35,11 @@ public class PlanService {
                 break;
         }
 
-        this.plans.add(newPlan);
+        this.add(newPlan);
         return new OperationResult<>(true, "Plano cadastrado com sucesso!", newPlan);
     }
 
     public OperationResult<Void> updatePrice(String name, double newPrice) {
-
         OperationResult<Plan> searchResult = findByName(name);
 
         if (!searchResult.isSuccess()) {
@@ -53,16 +52,11 @@ public class PlanService {
 
         Plan plan = searchResult.getData();
         plan.updatePrice(newPrice);
-
         return new OperationResult<>(true, "Preço do plano atualizado com sucesso!");
     }
 
-    public ArrayList<Plan> listPlans() {
-        return this.plans;
-    }
-
     public OperationResult<Plan> findByName(String name) {
-        for (Plan p : plans) {
+        for (Plan p : this.elements) {
             if (p.getName().equalsIgnoreCase(name)) {
                 return new OperationResult<>(true, "Plano encontrado.", p);
             }
@@ -70,7 +64,15 @@ public class PlanService {
         return new OperationResult<>(false, "Erro: Plano não encontrado.");
     }
 
-    public boolean nameExists(String name) {
+    private boolean nameExists(String name) {
         return findByName(name).isSuccess();
+    }
+
+    @Override
+    public void save(String filePath) {
+    }
+
+    @Override
+    public void load(String filePath) {
     }
 }

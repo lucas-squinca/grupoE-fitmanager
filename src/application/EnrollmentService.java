@@ -1,15 +1,15 @@
 package application;
 
 import domain.*;
+import persistence.Repository;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
-public class EnrollmentService {
-    private ArrayList<Enrollment> enrollments;
+public class EnrollmentService extends Repository<Enrollment> {
+
     private static int nextCode = 1;
 
     public EnrollmentService() {
-        this.enrollments = new ArrayList<>();
+        super();
     }
 
     private int generateCode() {
@@ -46,13 +46,14 @@ public class EnrollmentService {
         Payment initialPayment = instantiatePayment(amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
 
         newEnrollment.registerPayment(initialPayment);
-        this.enrollments.add(newEnrollment);
+
+        this.add(newEnrollment);
 
         return new OperationResult<>(true, "Matrícula realizada com sucesso!", newEnrollment);
     }
 
     public OperationResult<Enrollment> findByCode(int code) {
-        for (Enrollment e : this.enrollments) {
+        for (Enrollment e : this.elements) {
             if (e.getCode() == code) {
                 return new OperationResult<>(true, "Matrícula encontrada.", e);
             }
@@ -61,12 +62,11 @@ public class EnrollmentService {
     }
 
     public boolean hasActiveEnrollment(String cpf) {
-
         return findActiveByStudent(cpf).isSuccess();
     }
 
     public OperationResult<Enrollment> findActiveByStudent(String cpf) {
-        for (Enrollment e : this.enrollments) {
+        for (Enrollment e : this.elements) {
             if (e.getStudent().getCpf().equals(cpf) && e.getStatus() == EnrollmentStatus.ACTIVE) {
                 return new OperationResult<>(true, "Matrícula ativa encontrada.", e);
             }
@@ -75,7 +75,6 @@ public class EnrollmentService {
     }
 
     public OperationResult<Payment> registerPayment(int code, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
-
         OperationResult<Enrollment> searchResult = findByCode(code);
 
         if (!searchResult.isSuccess()) {
@@ -118,7 +117,11 @@ public class EnrollmentService {
         return new OperationResult<>(true, "Matrícula cancelada com sucesso!");
     }
 
-    public ArrayList<Enrollment> listEnrollments() {
-        return this.enrollments;
+    @Override
+    public void save(String filePath) {
+    }
+
+    @Override
+    public void load(String filePath) {
     }
 }
