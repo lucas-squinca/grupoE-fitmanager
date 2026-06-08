@@ -60,28 +60,24 @@ public class StudentMenu {
         }
     }
 
-    // MÉTODOS DE CADA OPÇÃO DO MENU
-
     private void registerStudent() {
-        // 1. O Menu coleta os dados
         String name = ui.getInput("Digite o nome");
         String cpf = ui.getInput("Digite o CPF (apenas números)");
         String contact = ui.getInput("Digite o e-mail/telefone");
-        String dateStr = ui.getInput("Digite a data de nascimento (dd/mm/aaaa)");
 
         LocalDate birthDate = null;
-        try {
-            // Tenta converter a string digitada para uma data real
-            birthDate = LocalDate.parse(dateStr, dateFormatter);
-        } catch (DateTimeParseException e) {
-            ui.showError("Formato de data inválido. Use dd/mm/aaaa.");
-            return; // Aborta o cadastro e volta pro menu
+
+        while (birthDate == null) {
+            String dateStr = ui.getInput("Digite a data de nascimento (dd/mm/aaaa)");
+            try {
+                birthDate = LocalDate.parse(dateStr, dateFormatter);
+            } catch (DateTimeParseException e) {
+                ui.showError("Formato de data inválido. Use dd/mm/aaaa e tente novamente.");
+            }
         }
 
-        // 2. O FitManager coordena
-        OperationResult result = fitManager.registerStudent(name, cpf, contact, birthDate);
+        OperationResult<Student> result = fitManager.registerStudent(name, cpf, contact, birthDate);
 
-        // 3. O Menu exibe o resultado
         if (result.isSuccess()) {
             ui.showMessage(result.getMessage());
         } else {
@@ -91,11 +87,15 @@ public class StudentMenu {
 
     private void consultStudent() {
         String cpf = ui.getInput("Digite o CPF para consulta");
-        Student student = fitManager.findStudentByCpf(cpf);
 
-        if (student == null) {
-            ui.showError("Nenhum aluno encontrado com este CPF.");
+        OperationResult<Student> searchResult = fitManager.findStudentByCpf(cpf);
+
+        if (!searchResult.isSuccess()) {
+            ui.showError(searchResult.getMessage());
         } else {
+            // Extrai o estudante do resultado validado
+            Student student = searchResult.getData();
+
             StringBuilder dadosAluno = new StringBuilder();
             dadosAluno.append("--- Dados do Aluno ---\n\n");
 
@@ -112,8 +112,7 @@ public class StudentMenu {
     private void removeStudent() {
         String cpf = ui.getInput("Digite o CPF do aluno a ser inativado");
 
-        // Repassa para o FitManager tentar excluir
-        OperationResult result = fitManager.removeStudent(cpf);
+        OperationResult<Void> result = fitManager.removeStudent(cpf);
 
         if (result.isSuccess()) {
             ui.showMessage(result.getMessage());
@@ -123,28 +122,24 @@ public class StudentMenu {
     }
 
     private void listStudents() {
-        ArrayList<Student> students = fitManager.listStudents();
+        OperationResult<ArrayList<Student>> listResult = fitManager.listStudents();
+        ArrayList<Student> students = listResult.getData();
 
         if (students.isEmpty()) {
-            ui.showMessage("Não existem alunos registados no sistema.");
+            ui.showMessage("Não existem alunos registrados no sistema.");
             return;
         }
 
-        // 1. Cria o construtor de texto
         StringBuilder relatorio = new StringBuilder();
         relatorio.append("--- RELATÓRIO GERAL DE ALUNOS ---\n");
 
-        // 2. Acumula os dados linha por linha
         for (Student s : students) {
             String status = s.isActive() ? "ATIVO" : "INATIVO";
-
-            // Usa String.format para montar o texto formatado e anexa no StringBuilder
             String linha = String.format("Nome: %-20s | CPF: %-14s | Idade: %02d anos | Status: %s\n",
                     s.getName(), s.getCpf(), s.calculateAge(), status);
             relatorio.append(linha);
         }
 
-        // Manda a interface (seja ela Terminal ou JOptionPane) para exibir o texto no final.
         ui.showMessage(relatorio.toString());
     }
 
@@ -152,12 +147,15 @@ public class StudentMenu {
         ui.showMessage("--- Editar Cadastro do Aluno ---");
         String cpf = ui.getInput("Digite o CPF do aluno que deseja editar");
 
-        Student student = fitManager.findStudentByCpf(cpf);
+        OperationResult<Student> searchResult = fitManager.findStudentByCpf(cpf);
 
-        if (student == null) {
-            ui.showError("Nenhum aluno encontrado com este CPF.");
+        if (!searchResult.isSuccess()) {
+            ui.showError(searchResult.getMessage());
             return;
         }
+
+        // Extrai o aluno do resultado
+        Student student = searchResult.getData();
 
         ui.showMessage("Dados atuais -> Nome: " + student.getName() + " | Contato: " + student.getContact());
 
@@ -171,7 +169,7 @@ public class StudentMenu {
             newContact = student.getContact();
         }
 
-        OperationResult result = fitManager.updateStudent(cpf, newName, newContact);
+        OperationResult<Void> result = fitManager.updateStudent(cpf, newName, newContact);
 
         if (result.isSuccess()) {
             ui.showMessage(result.getMessage());
