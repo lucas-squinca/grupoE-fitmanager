@@ -3,8 +3,9 @@ package domain;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.io.Serializable;
+import exceptions.ValidationException;
 
-public class Enrollment implements Serializable{
+public class Enrollment implements Serializable {
     private int code;
     private Student student;
     private Plan plan;
@@ -15,8 +16,23 @@ public class Enrollment implements Serializable{
     private EnrollmentStatus status;
     private ArrayList<Payment> payments;
 
-
     public Enrollment(int code, Student student, Plan plan, LocalDate startDate, int durationMonths) {
+        if (code <= 0) {
+            throw new ValidationException("Erro Crítico: O código da matrícula deve ser maior que zero.");
+        }
+        if (student == null) {
+            throw new ValidationException("Erro Crítico: O aluno associado não pode ser nulo.");
+        }
+        if (plan == null) {
+            throw new ValidationException("Erro Crítico: O plano associado não pode ser nulo.");
+        }
+        if (startDate == null) {
+            throw new ValidationException("Erro Crítico: A data de início não pode ser nula.");
+        }
+        if (durationMonths <= 0) {
+            throw new ValidationException("Erro Crítico: A duração da matrícula deve ser maior que zero.");
+        }
+
         this.code = code;
         this.student = student;
         this.plan = plan;
@@ -29,6 +45,9 @@ public class Enrollment implements Serializable{
     }
 
     public void registerPayment(Payment payment) {
+        if (payment == null) {
+            throw new ValidationException("Erro Crítico: O pagamento a ser registrado não pode ser nulo.");
+        }
         this.payments.add(payment);
     }
 
@@ -51,6 +70,7 @@ public class Enrollment implements Serializable{
             this.status = EnrollmentStatus.CANCELLED;
         }
     }
+
     public int getCode() {
         return code;
     }
@@ -81,5 +101,9 @@ public class Enrollment implements Serializable{
 
     public EnrollmentStatus getStatus() {
         return this.status;
+    }
+
+    public ArrayList<Payment> getPayments() {
+        return this.payments;
     }
 }
