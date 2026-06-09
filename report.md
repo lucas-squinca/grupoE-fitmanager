@@ -1,6 +1,7 @@
 ## Relatórios
 ### [Relatório - Etapa 1](#fitmanager--relatório-da-primeira-etapa)
 ### [Relatório - Etapa 2](#fitmanager--relatório-da-segunda-etapa)
+### [Relatório - Etapa 3](#fitmanager--relatório-da-terceira-etapa)
 
 ----
 # FitManager — Relatório da Primeira Etapa
@@ -814,3 +815,475 @@ Definir onde alocar a lógica de desconto — se na superclasse, nas subclasses 
 **Organização e evolução em relação à Etapa 1**
 
 O desenvolvimento desta etapa foi mais progressivo e melhor organizado. O grupo manteve a divisão de responsabilidades por camada, mas com mais pontos de alinhamento ao longo do processo — o que reduziu o retrabalho na integração e permitiu que incompatibilidades entre camadas fossem identificadas e corrigidas mais cedo. A experiência da Etapa 1 mostrou que alinhar os contratos entre camadas antes de implementar é mais eficiente do que descobrir incompatibilidades na integração final.
+
+# FitManager — Relatório da Terceira Etapa
+
+## 1. Introdução
+
+Nesta terceira etapa, o sistema FitManager foi aprimorado com quatro frentes de evolução: tipagem genérica via Generics, uma hierarquia de exceções de domínio, persistência de dados em arquivos binários e geração de relatório financeiro mensal. As mudanças reforçam a robustez da arquitetura e garantem que os dados sobrevivam ao encerramento do sistema.
+
+O sistema mantém toda a base funcional construída nas etapas anteriores. As correções de comportamento — desconto de planos, taxa de cartão de débito, multa de cancelamento e exibição do histórico de pagamentos — foram integradas sem alterações na estrutura de camadas.
+
+---
+
+## 2. Integrantes e Contribuições
+
+| Integrante | Foco principal |
+|---|---|
+| Lucas Dias Squinca | Hierarquia de Exceções: Criação do pacote de exceções customizadas e a consequente blindagem rica das classes de domínio `(Student, Plan, Payment, Enrollment)` contra dados inválidos. |
+| Pedro Rodrigues Rocha | Generics e Manutenção: Parametrização genérica da classe `OperationResult<T>` e implementação das correções de regras de negócio e refatorações herdadas da Etapa 2. |
+| Luis Henrique Gonzaga Botelho | Persistência e Relatórios: Criação da abstração genérica `Repository<T>`, implementação da persistência automatizada em arquivos binários (.dat) e desenvolvimento do novo Relatório Financeiro Mensal. |
+
+A divisão por responsabilidades foi mantida. As decisões de projeto foram alinhadas previamente em grupo, especialmente a interface entre `Repository<T>` e os serviços e a estrutura do pacote de exceções, para evitar retrabalho na integração.
+
+---
+
+## 3. Diagrama de Classes Atualizado
+
+O diagrama abaixo reflete o sistema conforme implementado nesta etapa, destacando as adições e modificações em relação à Etapa 2.
+
+```plantuml
+@startuml
+
+package "ui" {
+  interface UserInterface {
+    +showMenu(title: String, options: String[]): int
+    +getInput(prompt: String): String
+    +showMessage(msg: String): void
+    +showError(msg: String): void
+  }
+  
+  class TerminalUI implements UserInterface {
+    -scanner: Scanner
+  }
+  
+  class JOptionPaneUI implements UserInterface {
+  }
+  
+  class MainMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +start(): void
+  }
+  
+  class StudentMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+  
+  class PlanMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+  }
+  
+  class EnrollmentMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    -processPaymentDetails(): PaymentContext
+    +run(): void
+  }
+  
+  class ReportsMenu {
+    -ui: UserInterface
+    -fitManager: FitManager
+    +run(): void
+    +generateFinancialReport(month: int, year: int): void
+  }
+}
+
+package "application" {
+  abstract class Repository<T> {
+    #elements: ArrayList<T>
+    -type: Class<T>
+    +add(item: T): void
+    +listAll(): ArrayList<T>
+    +save(filename: String): void
+    +load(filename: String): void
+  }
+  
+  class FitManager {
+    -studentService: StudentService
+    -planService: PlanService
+    -enrollmentService: EnrollmentService
+    +registerStudent(...): OperationResult<Student>
+    +findStudentByCpf(cpf: String): Student
+    +updateStudent(...): OperationResult<Student>
+    +removeStudent(cpf: String): OperationResult<Student>
+    +listStudents(): ArrayList<Student>
+    +registerPlan(...): OperationResult<Plan>
+    +findPlanByName(name: String): Plan
+    +updatePlanPrice(...): OperationResult<Plan>
+    +listPlans(): ArrayList<Plan>
+    +enrollStudent(...): OperationResult<Enrollment>
+    +registerPayment(...): OperationResult<Enrollment>
+    +cancelEnrollment(code: int): OperationResult<Enrollment>
+    +findActiveEnrollment(cpf: String): Enrollment
+    +listEnrollments(): ArrayList<Enrollment>
+    +loadAllData(): void
+    +saveAllData(): void
+  }
+  
+  class StudentService extends Repository {
+    +registerStudent(...): OperationResult<Student>
+    +updateStudent(...): OperationResult<Student>
+    +findByCPF(cpf: String): Student
+    +removeStudent(cpf: String): OperationResult<Student>
+    +listStudents(): ArrayList<Student>
+    +cpfExists(cpf: String): boolean
+  }
+  
+  class PlanService extends Repository {
+    +registerPlan(...): OperationResult<Plan>
+    +findByName(name: String): Plan
+    +updatePrice(...): OperationResult<Plan>
+    +listPlans(): ArrayList<Plan>
+    +nameExists(name: String): boolean
+  }
+  
+  class EnrollmentService extends Repository {
+    -{static} nextCode: int
+    +enroll(...): OperationResult<Enrollment>
+    +registerPayment(...): OperationResult<Enrollment>
+    +cancel(code: int): OperationResult<Enrollment>
+    +findActiveByStudent(cpf: String): Enrollment
+    +findByCode(code: int): Enrollment
+    +listEnrollments(): ArrayList<Enrollment>
+    +hasActiveEnrollment(cpf: String): boolean
+  }
+  
+  class OperationResult<T> {
+    -success: boolean
+    -message: String
+    -data: T
+    +isSuccess(): boolean
+    +getMessage(): String
+    +getData(): T
+  }
+  
+  class PaymentContext {
+    +type: PaymentType
+    +amount: double
+    +pixKey: String
+    +cardLastDigits: String
+    +installments: int
+    +amountReceived: double
+  }
+}
+
+package "domain" {
+  interface Serializable
+  
+  class Student implements Serializable {
+    -name: String
+    -cpf: String
+    -contact: String
+    -birthDate: LocalDate
+    -active: boolean
+    +{static} validateCpf(cpf: String): boolean
+    +calculateAge(): int
+    +activate(): void
+    +deactivate(): void
+  }
+  
+  abstract class Plan implements Serializable {
+    -name: String
+    -description: String
+    -type: PlanType
+    -minDurationMonths: int
+    -pricePerMonth: double
+    +{abstract} calculateTotalPrice(months: int): double
+    +{abstract} getCancellationFee(enrollment: Enrollment): double
+    +updatePrice(newPrice: double): void
+  }
+  
+  class MonthlyPlan extends Plan { }
+  class QuarterlyPlan extends Plan { }
+  class SemiAnnualPlan extends Plan { }
+  class AnnualPlan extends Plan { }
+  
+  class Enrollment implements Serializable {
+    -code: int
+    -student: Student
+    -plan: Plan
+    -startDate: LocalDate
+    -endDate: LocalDate
+    -durationMonths: int
+    -totalPrice: double
+    -status: EnrollmentStatus
+    -payments: ArrayList<Payment>
+    +registerPayment(payment: Payment): void
+    +calculateTotalPaid(): double
+    +calculateBalance(): double
+    +getPayments(): ArrayList<Payment>
+    +cancel(): void
+  }
+  
+  abstract class Payment implements Serializable {
+    -date: LocalDate
+    -amount: double
+    -type: PaymentType
+    -description: String
+    +{abstract} getProcessingFee(): double
+    +{abstract} getPaymentSummary(): String
+  }
+  
+  class PixPayment extends Payment { }
+  class CreditCardPayment extends Payment { }
+  class DebitCardPayment extends Payment { }
+  class CashPayment extends Payment { }
+  
+enum PlanType {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum PaymentType {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  CASH
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  CANCELLED
+}
+}
+
+package "exceptions" {
+  class FitManagerException extends RuntimeException {
+    +FitManagerException(message: String)
+    +FitManagerException(message: String, cause: Throwable)
+  }
+  
+  class ValidationException extends FitManagerException {
+    +ValidationException(message: String)
+  }
+  
+  class PersistenceException extends FitManagerException {
+    +PersistenceException(message: String, cause: Throwable)
+  }
+}
+
+' --- RELACIONAMENTOS ---
+
+MainMenu --> UserInterface
+MainMenu --> FitManager
+StudentMenu --> UserInterface
+StudentMenu --> FitManager
+PlanMenu --> UserInterface
+PlanMenu --> FitManager
+EnrollmentMenu --> UserInterface
+EnrollmentMenu --> FitManager
+ReportsMenu --> UserInterface
+ReportsMenu --> FitManager
+
+EnrollmentMenu ..> PaymentContext : "Usa (DTO)"
+
+FitManager *-- StudentService
+FitManager *-- PlanService
+FitManager *-- EnrollmentService
+
+StudentService --> Student
+PlanService --> Plan
+EnrollmentService --> Enrollment
+Enrollment --> Plan
+Enrollment "1" *-- "0..*" Payment
+Enrollment --> EnrollmentStatus
+Plan --> PlanType
+Payment --> PaymentType
+
+Repository ..> PersistenceException
+Student ..> ValidationException
+Plan ..> ValidationException
+Payment ..> ValidationException
+Enrollment ..> ValidationException
+
+@enduml
+```
+
+---
+
+## 4. Decisões de Projeto
+
+### 4.1 Repositório genérico como classe abstrata, não interface
+
+**Decisão:** `Repository<T>` foi implementado como classe abstrata com `ArrayList<T>` como estrutura interna e os métodos `save()` / `load()` já implementados.
+
+**Alternativas consideradas:** Criar uma interface `Repository<T>` e deixar cada serviço implementar sua própria lógica de armazenamento e persistência.
+
+**Justificativa:** Os três serviços compartilham exatamente o mesmo comportamento de armazenamento em lista e de serialização binária. Delegar essa implementação para cada subclasse causaria triplicação de código sem nenhum ganho de flexibilidade, pois o mecanismo de persistência é uniforme em todo o sistema. A classe abstrata é o padrão correto quando há comportamento concreto reutilizável: as subclasses herdam a lógica comum e sobrescrevem apenas o que é específico de cada domínio.
+
+**Impacto:** `StudentService`, `PlanService` e `EnrollmentService` passaram a estender `Repository<T>`, eliminando os atributos de lista duplicados e centralizando `save()` e `load()` em um único ponto de manutenção.
+
+---
+
+### 4.2 Tratamento de type erasure via `Class<T>` no construtor
+
+**Decisão:** O construtor de `Repository<T>` recebe o parâmetro `Class<T> type`, que é armazenado como atributo e utilizado em `type.cast()` durante a leitura dos arquivos.
+
+**Alternativas consideradas:** Usar `@SuppressWarnings("unchecked")` e realizar casts sem verificação de tipo.
+
+**Justificativa:** Em Java, o tipo genérico `T` é apagado em tempo de execução (type erasure), o que impede a verificação de tipo ao desserializar objetos de arquivos binários. O uso de `@SuppressWarnings("unchecked")` suprime o aviso do compilador sem resolver o problema: um arquivo corrompido ou com dado de tipo errado causaria um `ClassCastException` em tempo de execução. Receber `Class<T>` no construtor permite que o repositório realize o cast via `type.cast()`, que lança `ClassCastException` de forma controlada e pode ser tratada dentro do `PersistenceException`. A abordagem é a mesma utilizada por frameworks como o Hibernate para instanciação segura de entidades.
+
+**Impacto:** A assinatura dos construtores dos serviços passou a incluir a classe do tipo gerenciado — `new StudentService(Student.class)` — o que é instanciado em `FitManager`.
+
+---
+
+### 4.3 `OperationResult<T>` parametrizado
+
+**Decisão:** `OperationResult` foi convertido em `OperationResult<T>`, parametrizando o atributo `data` com o tipo real do objeto processado.
+
+**Alternativas consideradas:** Manter `data` como `Object` e realizar casts no ponto de uso.
+
+**Justificativa:** O cast de `Object` nos menus é frágil: o compilador não detecta incompatibilidades de tipo, e um cast errado só manifesta erro em tempo de execução. Com `OperationResult<Student>`, o compilador garante que o dado extraído via `getData()` seja um `Student`. Isso também documenta a intenção do método de forma mais precisa: `registerStudent()` retorna `OperationResult<Student>`, não um `OperationResult` genérico cujo conteúdo precisa ser inspecionado ou documentado separadamente.
+
+**Impacto:** Todas as assinaturas de método nos serviços e no `FitManager` foram atualizadas com o tipo parametrizado correto. Os menus que antes faziam cast explícito passaram a usar `getData()` diretamente com segurança de tipo.
+
+---
+
+### 4.4 Hierarquia de exceções com dois ramos distintos
+
+**Decisão:** O pacote `exception` foi estruturado com `FitManagerException` como base, `ValidationException` para violações de regra de negócio e `PersistenceException` para falhas de infraestrutura (I/O de arquivos).
+
+**Alternativas consideradas:** Usar `IllegalArgumentException` e `IOException` diretamente, sem hierarquia customizada.
+
+**Justificativa:** Exceções da JDK não carregam o contexto do domínio: um `IllegalArgumentException` lançado por `Student` não diz nada sobre o que é inválido nem em que contexto. A hierarquia customizada permite que a camada de serviço capture `ValidationException` e `PersistenceException` por nome, sem depender de mensagens de texto para distinguir falhas de tipos diferentes. A separação entre os dois ramos reflete a separação arquitetural: `ValidationException` vem do domínio e indica dado inválido; `PersistenceException` vem da infraestrutura e indica falha de I/O. A camada de interface trata os dois de formas diferentes — `ValidationException` resulta em mensagem de erro ao usuário; `PersistenceException` pode resultar em log ou encerramento controlado.
+
+**Impacto:** `FitManagerException` estende `RuntimeException`, o que permite que o domínio a lance sem obrigar todos os chamadores a declará-la com `throws`. Os serviços capturam as exceções nos blocos `try-catch` e as convertem em `OperationResult` com `success = false`.
+
+---
+
+### 4.5 Blindagem do domínio com validação nos construtores
+
+**Decisão:** As classes `Plan`, `Student`, `Payment` e `Enrollment` passaram a lançar `ValidationException` diretamente em seus construtores e setters quando recebem dados inválidos.
+
+**Alternativas consideradas:** Manter toda a validação na camada de serviço, antes da instanciação.
+
+**Justificativa:** O modelo anêmico — classe de domínio sem lógica, com validação espalhada nos serviços — cria uma dependência: a consistência de um objeto depende do serviço que o instanciou ter feito as verificações corretas. Se um segundo serviço ou ponto de criação for adicionado no futuro, a validação precisa ser duplicada. Com a validação no construtor, o objeto é sempre válido ao existir: é impossível criar um `Plan` com preço negativo, independentemente de qual serviço o instanciou. Essa abordagem segue o princípio de invariantes de domínio e torna o código mais fácil de raciocinar.
+
+**Impacto:** Os serviços ainda realizam validações de unicidade e regras que envolvem múltiplos objetos (ex.: CPF duplicado), pois essas não podem ser feitas pelo domínio isolado. A validação do domínio agrega, não substitui, a validação do serviço.
+
+---
+
+### 4.6 Serialização binária como mecanismo de persistência
+
+**Decisão:** A persistência foi implementada com `ObjectOutputStream` e `ObjectInputStream`, serializando cada coleção completa em um arquivo `.dat`.
+
+**Alternativas consideradas:** Persistência em texto simples (CSV ou JSON manual) ou uso de banco de dados embarcado (H2).
+
+**Justificativa:** A serialização binária é a forma mais direta de persistir grafos de objetos Java sem dependências externas: não exige parsing, mapeamento entre campos de texto e atributos, nem biblioteca adicional. Para um sistema acadêmico sem requisito de interoperabilidade externa com outros sistemas, a serialização atende completamente. O CSV exigiria serialização manual de cada campo de cada subclasse de `Payment` e `Plan`, o que seria mais propenso a erros e mais difícil de manter à medida que novas subclasses fossem adicionadas.
+
+**Impacto:** Os arquivos `.dat` são opacos (não legíveis em texto), o que é aceitável para o contexto do sistema. Uma migração futura para JSON ou banco de dados seria feita apenas nos métodos `save()` e `load()` de `Repository<T>`, sem alteração nos serviços ou no domínio.
+
+---
+
+### 4.7 Orquestração da carga e salvamento no `FitManager`
+
+**Decisão:** Os métodos `loadAllData()` e `saveAllData()` foram implementados no `FitManager`, que controla a ordem de execução: alunos e planos são carregados antes das matrículas.
+
+**Alternativas consideradas:** Deixar cada serviço carregar seus próprios dados de forma independente, ou centralizar no `MainMenu`.
+
+**Justificativa:** A ordem de carregamento importa: `Enrollment` mantém referências a objetos `Student` e `Plan`. Se as matrículas forem desserializadas antes dos alunos e planos, as referências internas ainda são resolvidas pelo mecanismo de serialização Java (que preserva o grafo de objetos), mas a coleção de serviços estaria vazia, impossibilitando buscas por CPF ou nome. Centralizar no `FitManager` segue o mesmo princípio das etapas anteriores: operações que coordenam múltiplos serviços pertencem ao orquestrador. Colocar no `MainMenu` violaria a separação de camadas — a interface não deve conhecer dependências entre serviços.
+
+**Impacto:** O `MainMenu` chama apenas `fitManager.loadAllData()` na inicialização e `fitManager.saveAllData()` na saída, sem conhecimento da ordem ou dos arquivos envolvidos.
+
+---
+
+### 4.8 `PaymentContext` como objeto de transferência no `EnrollmentMenu`
+
+**Decisão:** A duplicação de código entre os fluxos de matrícula e registro de pagamento no `EnrollmentMenu` foi eliminada com a extração do método `processPaymentDetails()`, que retorna um objeto `PaymentContext` com todos os dados coletados do usuário.
+
+**Alternativas consideradas:** Passar os dados coletados como múltiplos parâmetros ou como um `Map<String, Object>`.
+
+**Justificativa:** A passagem de múltiplos parâmetros torna a assinatura do método frágil: qualquer novo dado exige alteração na assinatura e em todos os pontos de chamada. O `Map<String, Object>` perde a tipagem e exige casts nos pontos de uso. O `PaymentContext` é um objeto de transferência simples (DTO) que agrupa os dados com tipos corretos, tornando a intenção explícita e o código do menu mais legível. O padrão é amplamente utilizado em arquiteturas Java para transferência de dados entre camadas sem acoplamento excessivo.
+
+**Impacto:** O `EnrollmentMenu` ficou significativamente mais conciso. A lógica de coleta de dados financeiros existe em um único método, facilitando manutenção e futuras extensões (como a adição de um novo método de pagamento).
+
+---
+
+### 4.9 Relatório financeiro com agrupamento por `instanceof`
+
+**Decisão:** O `generateFinancialReport()` no `ReportsMenu` filtra pagamentos por mês e ano, e usa `instanceof` para categorizar e somar a receita por tipo de pagamento.
+
+**Alternativas consideradas:** Usar o enum `PaymentType` já presente nos objetos `Payment` para o agrupamento.
+
+**Justificativa:** O enum `PaymentType` seria a alternativa mais simples, mas não acessa atributos específicos das subclasses (como taxa de processamento real calculada por `getProcessingFee()`). O `instanceof` permite tanto a categorização quanto o downcast seguro para acessar comportamentos polimórficos de cada subclasse. Embora o uso extensivo de `instanceof` seja geralmente um sinal de design a ser revisto, no contexto de um relatório de saída — que é por natureza uma operação de projeção sobre um conjunto heterogêneo de objetos — ele é a abordagem mais direta e inteligível.
+
+**Impacto:** O relatório exibe o total arrecadado separado por forma de pagamento (PIX, crédito, débito e dinheiro) e o total geral do mês, com as taxas de processamento somadas ao valor líquido recebido.
+
+---
+
+## 5. Correções Implementadas
+
+As correções abaixo foram identificadas na revisão do sistema das etapas anteriores e integradas nesta entrega.
+
+### 5.1 Desconto dos planos com duração mínima
+
+O desconto das subclasses `QuarterlyPlan`, `SemiAnnualPlan` e `AnnualPlan` agora é aplicado apenas quando a duração contratada pelo aluno atinge ou supera a duração mínima do plano (`durationMonths >= minDurationMonths`). Nas etapas anteriores, o desconto era aplicado independentemente da duração, o que violava a regra de negócio especificada.
+
+### 5.2 Taxa de processamento do cartão de débito
+
+A taxa de processamento de `DebitCardPayment` foi corrigida para o valor especificado. O método `calculateBalance()` de `Enrollment` passou a somar as taxas de processamento de todos os pagamentos ao valor total da matrícula, refletindo o custo real incorrido pelo aluno.
+
+### 5.3 Multa de cancelamento aplicada ao saldo
+
+O método `cancel()` em `EnrollmentService` passou a invocar `enrollment.getPlan().getCancellationFee(enrollment)` e somar o resultado ao `totalPrice` da matrícula no momento do cancelamento. Antes desta correção, a multa era calculada mas não incorporada ao saldo devedor.
+
+### 5.4 Exibição do histórico de pagamentos
+
+A tela de consulta de matrícula ativa no `EnrollmentMenu` passou a exibir a lista completa de pagamentos do aluno, utilizando `getPaymentSummary()` de forma efetiva para cada entrada. O método `getPayments()` foi adicionado a `Enrollment` para expor o histórico à camada de interface sem quebrar o encapsulamento.
+
+---
+
+## 6. Regras de Negócio Implementadas
+
+### Persistência
+
+| Regra | Implementação |
+|---|---|
+| Dados persistem entre execuções | `Repository<T>.save()` / `load()` com serialização binária em `.dat` |
+| Ordem de carga respeita dependências | `FitManager.loadAllData()` carrega alunos e planos antes de matrículas |
+| Salvamento automático na saída | `MainMenu` chama `saveAllData()` na opção 5 (Sair) |
+| Carga automática na inicialização | `MainMenu.start()` chama `loadAllData()` antes de exibir o menu principal |
+
+### Hierarquia de Planos (corrigida)
+
+| Subclasse | Desconto | Condição para desconto | Taxa de cancelamento |
+|---|---|---|---|
+| `MonthlyPlan` | Nenhum | — | 0% |
+| `QuarterlyPlan` | 5% sobre valor bruto total | `durationMonths >= minDurationMonths` | 0% |
+| `SemiAnnualPlan` | 10% sobre valor bruto total | `durationMonths >= minDurationMonths` | 0% |
+| `AnnualPlan` | 15% sobre valor bruto total | `durationMonths >= minDurationMonths` | 20% do total, se cancelamento ocorrer antes da metade do período |
+
+### Relatório Financeiro
+
+| Campo | Origem |
+|---|---|
+| Total por forma de pagamento | Soma de `payment.getAmount()` por categoria via `instanceof` |
+| Taxas de processamento | Soma de `payment.getProcessingFee()` por categoria |
+| Total geral do mês | Soma de todos os pagamentos do mês/ano filtrados |
+
+---
+
+## 7. Dificuldades e Aprendizados
+
+**Generics e type erasure**
+
+A maior dificuldade técnica desta etapa foi o tratamento do type erasure no repositório genérico. A tentativa inicial de fazer o cast diretamente com `(T)` gerava aviso de unchecked cast — correto por parte do compilador, pois o tipo `T` não existe em tempo de execução. Compreender que a solução exigia passar `Class<T>` explicitamente no construtor, e que frameworks Java utilizam esse mesmo padrão, foi um aprendizado concreto sobre os limites e contornos do sistema de tipos da linguagem.
+
+**Serialização e consistência do grafo de objetos**
+
+A serialização binária do Java preserva automaticamente referências compartilhadas: se dois objetos `Enrollment` referenciam o mesmo objeto `Plan`, o arquivo serializado armazena o `Plan` uma vez e as duas referências apontam para o mesmo objeto ao desserializar. Esse comportamento é correto para o sistema, mas exigiu atenção ao testar a carga: modificar um plano após carregar os dados afeta todas as matrículas vinculadas a ele, o que é o comportamento esperado e consistente com as etapas anteriores.
+
+**Integração das correções sem regressão**
+
+Aplicar as quatro correções da seção 5 sem introduzir regressões nos fluxos existentes exigiu reteste manual completo dos cenários de matrícula, pagamento e cancelamento. A experiência reforçou a importância de testes automatizados, mesmo que básicos — a ausência de testes unitários tornou cada correção um risco de quebra em outra parte do sistema.
+
+**Organização e evolução em relação às etapas anteriores**
+
+O grupo manteve a dinâmica de alinhar contratos entre camadas antes de implementar, o que reduziu o retrabalho na integração. A separação entre as correções de comportamento e as novas funcionalidades foi tratada de forma explícita desde o início do desenvolvimento, evitando que mudanças de correção se misturassem com mudanças arquiteturais e tornassem a revisão do código mais difícil.
