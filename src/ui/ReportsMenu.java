@@ -5,6 +5,11 @@ import application.OperationResult;
 import domain.Enrollment;
 import domain.Plan;
 import domain.Student;
+import domain.Payment;
+import domain.PixPayment;
+import domain.CreditCardPayment;
+import domain.DebitCardPayment;
+import domain.CashPayment;
 
 import java.util.ArrayList;
 
@@ -52,8 +57,6 @@ public class ReportsMenu {
             }
         }
     }
-
-    // MÉTODOS DE CADA RELATÓRIO
 
     private void reportStudents() {
         OperationResult<ArrayList<Student>> listResult = fitManager.listStudents();
@@ -121,6 +124,68 @@ public class ReportsMenu {
     }
 
     private void generateFinancialReport() {
-        ui.showMessage("O Relatório Financeiro será implementado na última fase desta etapa!");
+        int month = 0;
+        int year = 0;
+
+        try {
+            month = Integer.parseInt(ui.getInput("Digite o mês (1 a 12)"));
+            if (month < 1 || month > 12) {
+                ui.showError("Mês inválido. Deve ser entre 1 e 12.");
+                return;
+            }
+
+            year = Integer.parseInt(ui.getInput("Digite o ano (ex: 2026)"));
+        } catch (NumberFormatException e) {
+            ui.showError("Entrada inválida. Digite apenas números inteiros.");
+            return;
+        }
+
+        OperationResult<ArrayList<Enrollment>> listResult = fitManager.listEnrollments();
+        ArrayList<Enrollment> enrollments = listResult.getData();
+
+        double totalPix = 0.0;
+        double totalCredit = 0.0;
+        double totalDebit = 0.0;
+        double totalCash = 0.0;
+        double totalGeral = 0.0;
+        int pagamentosEncontrados = 0;
+
+        for (Enrollment e : enrollments) {
+            for (Payment p : e.getPayments()) {
+                if (p.getDate().getMonthValue() == month && p.getDate().getYear() == year) {
+
+                    pagamentosEncontrados++;
+                    double valor = p.getAmount();
+                    totalGeral += valor;
+
+                    if (p instanceof PixPayment) {
+                        totalPix += valor;
+                    } else if (p instanceof CreditCardPayment) {
+                        totalCredit += valor;
+                    } else if (p instanceof DebitCardPayment) {
+                        totalDebit += valor;
+                    } else if (p instanceof CashPayment) {
+                        totalCash += valor;
+                    }
+                }
+            }
+        }
+
+        if (pagamentosEncontrados == 0) {
+            ui.showMessage(String.format("Nenhum pagamento encontrado para %02d/%d.", month, year));
+            return;
+        }
+
+        StringBuilder relatorio = new StringBuilder();
+        relatorio.append(String.format("--- RELATÓRIO FINANCEIRO (%02d/%d) ---\n\n", month, year));
+        relatorio.append(String.format("[PIX]                 R$ %8.2f\n", totalPix));
+        relatorio.append(String.format("[Cartão de Crédito]   R$ %8.2f\n", totalCredit));
+        relatorio.append(String.format("[Cartão de Débito]    R$ %8.2f\n", totalDebit));
+        relatorio.append(String.format("[Dinheiro em Espécie] R$ %8.2f\n", totalCash));
+        relatorio.append("-------------------------------------\n");
+        relatorio.append(String.format("TOTAL ARRECADADO:     R$ %8.2f\n", totalGeral));
+        relatorio.append(String.format("(%d pagamentos contabilizados)\n", pagamentosEncontrados));
+
+        ui.showMessage(relatorio.toString());
     }
 }

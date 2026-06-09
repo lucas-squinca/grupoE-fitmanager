@@ -2,14 +2,28 @@ package domain;
 
 import java.time.LocalDate;
 import java.io.Serializable;
+import exceptions.ValidationException;
 
-public abstract class Payment implements Serializable{
+public abstract class Payment implements Serializable {
     private LocalDate date;
     private double amount;
     private PaymentType type;
     private String description;
 
     public Payment(LocalDate date, double amount, PaymentType type, String description) {
+        if (date == null) {
+            throw new ValidationException("Erro Crítico: A data do pagamento não pode ser nula.");
+        }
+        if (amount <= 0) {
+            throw new ValidationException("Erro Crítico: O valor do pagamento deve ser maior que zero.");
+        }
+        if (type == null) {
+            throw new ValidationException("Erro Crítico: O tipo de pagamento não pode ser nulo.");
+        }
+        if (description == null || description.trim().isEmpty()) {
+            throw new ValidationException("Erro Crítico: A descrição do pagamento não pode ficar em branco.");
+        }
+
         this.date = date;
         this.amount = amount;
         this.type = type;
