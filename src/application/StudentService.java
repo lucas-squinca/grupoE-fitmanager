@@ -84,10 +84,10 @@ public class StudentService extends Repository<Student> {
     }
 
     @Override
-    public void save(String filePath) {
+    public void save(String filePath) throws PersistenceException {
     }
 
     @Override
-    public void load(String filePath) {
+    public void load(String filePath) throws PersistenceException {
     }
 }
