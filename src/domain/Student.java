@@ -1,9 +1,11 @@
 package domain;
 
+import exceptions.ValidationException;
 import java.time.LocalDate;
 import java.time.Period;
+import java.io.Serializable;
 
-public class Student {
+public class Student implements Serializable{
     private String name;
     private String cpf;
     private String contact;
@@ -11,6 +13,19 @@ public class Student {
     private boolean active;
 
     public Student(String name, String cpf, String contact, LocalDate birthDate) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Erro Crítico: O nome do aluno não pode ser vazio.");
+        }
+        if (cpf == null || !validateCpf(cpf)) {
+            throw new ValidationException("Erro Crítico: Formato de CPF inválido.");
+        }
+        if (contact == null || contact.trim().isEmpty()) {
+            throw new ValidationException("Erro Crítico: O contato não pode ser vazio.");
+        }
+        if (birthDate == null || birthDate.isAfter(LocalDate.now())) {
+            throw new ValidationException("Erro Crítico: Data de nascimento inválida (nula ou no futuro).");
+        }
+
         this.name = name;
         this.cpf = cpf;
         this.contact = contact;
@@ -18,62 +33,38 @@ public class Student {
         this.active = true;
     }
 
-    public void activate() {
-        this.active = true;
+    public String getName() { return name; }
+    public String getCpf() { return cpf; }
+    public String getContact() { return contact; }
+    public LocalDate getBirthDate() { return birthDate; }
+    public boolean isActive() { return active; }
+
+    public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new ValidationException("Erro Crítico: O nome do aluno não pode ficar em branco.");
+        }
+        this.name = name;
+    }
+
+    public void setContact(String contact) {
+        if (contact == null || contact.trim().isEmpty()) {
+            throw new ValidationException("Erro Crítico: O contato do aluno não pode ficar em branco.");
+        }
+        this.contact = contact;
     }
 
     public void deactivate() {
         this.active = false;
     }
 
-    // Calcula a idade dinamicamente
     public int calculateAge() {
-        // A classe Period calcula a diferença entre duas datas.
-        // LocalDate.now() pega a data exata de hoje.
-        return Period.between(this.birthDate, LocalDate.now()).getYears();
+        if (birthDate == null) return 0;
+        return Period.between(birthDate, LocalDate.now()).getYears();
     }
 
     public static boolean validateCpf(String cpf) {
-        if (cpf == null || cpf.length() != 11) {
-            return false;
-        }
-
-        return cpf.matches("[0-9]+");
-    }
-
-    public boolean isActive() {
-        return this.active;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getCpf() {
-        return cpf;
-    }
-
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
-
-    public String getContact() {
-        return contact;
-    }
-
-    public void setContact(String contact) {
-        this.contact = contact;
-    }
-
-    public LocalDate getBirthDate() {
-        return birthDate;
-    }
-
-    public void setBirthDate(LocalDate birthDate) {
-        this.birthDate = birthDate;
+        if (cpf == null) return false;
+        String cleanCpf = cpf.replaceAll("[^0-9]", "");
+        return cleanCpf.length() == 11;
     }
 }

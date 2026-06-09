@@ -1,22 +1,22 @@
 package application;
 
 import domain.*;
+import persistence.Repository;
 import java.time.LocalDate;
-import java.util.ArrayList;
+import exceptions.PersistenceException;
 
-public class EnrollmentService {
-    private ArrayList<Enrollment> enrollments;
+public class EnrollmentService extends Repository<Enrollment> {
+
     private static int nextCode = 1;
 
     public EnrollmentService() {
-        this.enrollments = new ArrayList<>();
+        super(Enrollment.class);
     }
 
     private int generateCode() {
         return nextCode++;
     }
 
-    // 1. A FÁBRICA DE PAGAMENTOS: Cria a subclasse correta
     private Payment instantiatePayment(double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
         LocalDate today = LocalDate.now();
         switch (type) {
@@ -33,99 +33,100 @@ public class EnrollmentService {
         }
     }
 
-    // Fluxo 3: Realizar Matrícula
-    public OperationResult enroll(Student student, Plan plan, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+    public OperationResult<Enrollment> enroll(Student student, Plan plan, LocalDate startDate, int duration, double amount, PaymentType paymentType, String paymentDescription, String pixKey, String cardLastDigits, int installments, double amountReceived) {
 
         if (duration < plan.getMinDurationMonths()) {
-            return new OperationResult(false, "Erro: A duração informada é menor que a duração mínima do plano.");
+            return new OperationResult<>(false, "Erro: A duração informada é menor que a duração mínima do plano.");
         }
 
         if (paymentType == PaymentType.CASH && amountReceived < amount) {
-            return new OperationResult(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
+            return new OperationResult<>(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
         }
 
         Enrollment newEnrollment = new Enrollment(generateCode(), student, plan, startDate, duration);
-
         Payment initialPayment = instantiatePayment(amount, paymentType, paymentDescription, pixKey, cardLastDigits, installments, amountReceived);
 
         newEnrollment.registerPayment(initialPayment);
-        this.enrollments.add(newEnrollment);
 
-        return new OperationResult(true, "Matrícula realizada com sucesso!", newEnrollment);
+        this.add(newEnrollment);
+
+        return new OperationResult<>(true, "Matrícula realizada com sucesso!", newEnrollment);
     }
 
-    // Busca uma matrícula pelo código
-    public Enrollment findByCode(int code) {
-        for (Enrollment e : this.enrollments) {
+    public OperationResult<Enrollment> findByCode(int code) {
+        for (Enrollment e : this.elements) {
             if (e.getCode() == code) {
-                return e;
+                return new OperationResult<>(true, "Matrícula encontrada.", e);
             }
         }
-        return null;
+        return new OperationResult<>(false, "Erro: Matrícula não encontrada.");
     }
 
-    // Verifica se um aluno já tem uma matrícula ativa
     public boolean hasActiveEnrollment(String cpf) {
-        for (Enrollment e : this.enrollments) {
-            if (e.getStudent().getCpf().equals(cpf) && e.getStatus() == EnrollmentStatus.ACTIVE) {
-                return true;
-            }
-        }
-        return false;
+        return findActiveByStudent(cpf).isSuccess();
     }
 
-    // Busca a matrícula ativa de um aluno específico
-    public Enrollment findActiveByStudent(String cpf) {
-        for (Enrollment e : this.enrollments) {
+    public OperationResult<Enrollment> findActiveByStudent(String cpf) {
+        for (Enrollment e : this.elements) {
             if (e.getStudent().getCpf().equals(cpf) && e.getStatus() == EnrollmentStatus.ACTIVE) {
-                return e;
+                return new OperationResult<>(true, "Matrícula ativa encontrada.", e);
             }
         }
-        return null;
+        return new OperationResult<>(false, "Erro: Nenhuma matrícula ativa encontrada para este aluno.");
     }
 
-    // Fluxo 4: Registrar um novo pagamento em uma matrícula existente
-    public OperationResult registerPayment(int code, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
-        Enrollment enrollment = findByCode(code);
+    public OperationResult<Payment> registerPayment(int code, double amount, PaymentType type, String description, String pixKey, String cardLastDigits, int installments, double amountReceived) {
+        OperationResult<Enrollment> searchResult = findByCode(code);
 
-        if (enrollment == null) {
-            return new OperationResult(false, "Erro: Matrícula não encontrada.");
+        if (!searchResult.isSuccess()) {
+            return new OperationResult<>(false, searchResult.getMessage());
         }
+
+        Enrollment enrollment = searchResult.getData();
+
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-            return new OperationResult(false, "Erro: Não é possível registrar pagamento em uma matrícula cancelada.");
+            return new OperationResult<>(false, "Erro: Não é possível registrar pagamento em uma matrícula cancelada.");
         }
         if (amount <= 0) {
-            return new OperationResult(false, "Erro: O valor do pagamento deve ser positivo.");
+            return new OperationResult<>(false, "Erro: O valor do pagamento deve ser positivo.");
         }
 
         if (type == PaymentType.CASH && amountReceived < amount) {
-            return new OperationResult(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
+            return new OperationResult<>(false, "Erro: O valor recebido não pode ser menor que o valor cobrado.");
         }
 
         Payment payment = instantiatePayment(amount, type, description, pixKey, cardLastDigits, installments, amountReceived);
         enrollment.registerPayment(payment);
 
-        return new OperationResult(true, "Pagamento registrado com sucesso!");
+        return new OperationResult<>(true, "Pagamento registrado com sucesso!", payment);
     }
-    // Fluxo 5: Cancelar Matrícula
-    public OperationResult cancel(int code) {
-        Enrollment enrollment = findByCode(code);
 
-        if (enrollment == null) {
-            return new OperationResult(false, "Erro: Matrícula não encontrada.");
+    public OperationResult<Void> cancel(int code) {
+        OperationResult<Enrollment> searchResult = findByCode(code);
+
+        if (!searchResult.isSuccess()) {
+            return new OperationResult<>(false, searchResult.getMessage());
         }
+
+        Enrollment enrollment = searchResult.getData();
 
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
-            return new OperationResult(false, "Erro: Esta matrícula já está cancelada.");
+            return new OperationResult<>(false, "Erro: Esta matrícula já está cancelada.");
         }
 
-        // Chama o método da classe de domínio para trocar o status de forma segura
         enrollment.cancel();
-        return new OperationResult(true, "Matrícula cancelada com sucesso!");
+        return new OperationResult<>(true, "Matrícula cancelada com sucesso!");
     }
 
-    // Listar todas as matrículas
-    public ArrayList<Enrollment> listEnrollments() {
-        return this.enrollments;
+    @Override
+    public void load(String filePath) throws exceptions.PersistenceException {
+        super.load(filePath);
+
+        for (domain.Enrollment e : this.elements) {
+            if (e.getCode() >= nextCode) {
+                nextCode = e.getCode() + 1;
+            }
+        }
     }
+
 }
