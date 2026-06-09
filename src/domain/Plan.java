@@ -1,8 +1,9 @@
 package domain;
 
 import exceptions.ValidationException;
+import java.io.Serializable;
 
-public abstract class Plan {
+public abstract class Plan implements Serializable{
     private String name;
     private String description;
     private int minDurationMonths;

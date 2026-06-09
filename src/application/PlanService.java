@@ -8,7 +8,7 @@ import exceptions.PersistenceException;
 public class PlanService extends Repository<Plan> {
 
     public PlanService() {
-        super();
+        super(Plan.class);
     }
 
     public OperationResult<Plan> registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
@@ -74,11 +74,4 @@ public class PlanService extends Repository<Plan> {
         return findByName(name).isSuccess();
     }
 
-    @Override
-    public void save(String filePath) throws PersistenceException {
-    }
-
-    @Override
-    public void load(String filePath) throws PersistenceException {
-    }
 }

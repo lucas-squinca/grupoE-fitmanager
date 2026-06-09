@@ -1,6 +1,7 @@
 package ui;
 
 import application.FitManager;
+import application.OperationResult;
 
 public class MainMenu {
     private UserInterface ui;
@@ -12,6 +13,16 @@ public class MainMenu {
     }
 
     public void start() {
+        ui.showMessage("Iniciando o FitManager e carregando a base de dados...");
+        OperationResult<Void> loadResult = fitManager.loadAllData();
+
+        if (!loadResult.isSuccess()) {
+            ui.showError(loadResult.getMessage());
+            ui.showMessage("O sistema iniciará com uma base de dados vazia.");
+        } else {
+            ui.showMessage(loadResult.getMessage());
+        }
+
         String[] options = {
                 "Gerenciar alunos",
                 "Gerenciar planos",
@@ -44,6 +55,15 @@ public class MainMenu {
                     break;
 
                 case 5:
+                    ui.showMessage("Salvando alterações na base de dados...");
+                    OperationResult<Void> saveResult = fitManager.saveAllData();
+
+                    if (saveResult.isSuccess()) {
+                        ui.showMessage(saveResult.getMessage());
+                    } else {
+                        ui.showError(saveResult.getMessage());
+                    }
+
                     running = false;
                     ui.showMessage("Encerrando o sistema. Até logo!");
                     break;

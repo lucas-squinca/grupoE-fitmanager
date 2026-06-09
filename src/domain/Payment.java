@@ -1,8 +1,9 @@
 package domain;
 
 import java.time.LocalDate;
+import java.io.Serializable;
 
-public abstract class Payment {
+public abstract class Payment implements Serializable{
     private LocalDate date;
     private double amount;
     private PaymentType type;

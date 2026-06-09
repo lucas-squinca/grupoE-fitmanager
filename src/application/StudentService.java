@@ -9,7 +9,7 @@ import java.time.LocalDate;
 public class StudentService extends Repository<Student> {
 
     public StudentService() {
-        super();
+        super(Student.class);
     }
 
     public boolean cpfExists(String cpf) {
@@ -75,11 +75,4 @@ public class StudentService extends Repository<Student> {
         }
     }
 
-    @Override
-    public void save(String filePath) throws PersistenceException {
-    }
-
-    @Override
-    public void load(String filePath) throws PersistenceException {
-    }
 }

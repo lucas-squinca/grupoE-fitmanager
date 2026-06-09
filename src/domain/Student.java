@@ -3,8 +3,9 @@ package domain;
 import exceptions.ValidationException;
 import java.time.LocalDate;
 import java.time.Period;
+import java.io.Serializable;
 
-public class Student {
+public class Student implements Serializable{
     private String name;
     private String cpf;
     private String contact;
