@@ -3,6 +3,7 @@ package application;
 import domain.*;
 import persistence.Repository;
 import java.util.ArrayList;
+import exceptions.PersistenceException;
 
 public class PlanService extends Repository<Plan> {
 

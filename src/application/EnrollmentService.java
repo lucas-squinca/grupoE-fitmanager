@@ -3,6 +3,7 @@ package application;
 import domain.*;
 import persistence.Repository;
 import java.time.LocalDate;
+import exceptions.PersistenceException;
 
 public class EnrollmentService extends Repository<Enrollment> {
 
