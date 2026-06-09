@@ -10,7 +10,7 @@ public class EnrollmentService extends Repository<Enrollment> {
     private static int nextCode = 1;
 
     public EnrollmentService() {
-        super();
+        super(Enrollment.class);
     }
 
     private int generateCode() {
@@ -119,10 +119,14 @@ public class EnrollmentService extends Repository<Enrollment> {
     }
 
     @Override
-    public void save(String filePath) throws PersistenceException {
+    public void load(String filePath) throws exceptions.PersistenceException {
+        super.load(filePath);
+
+        for (domain.Enrollment e : this.elements) {
+            if (e.getCode() >= nextCode) {
+                nextCode = e.getCode() + 1;
+            }
+        }
     }
 
-    @Override
-    public void load(String filePath) throws PersistenceException {
-    }
 }

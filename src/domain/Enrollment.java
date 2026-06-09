@@ -2,8 +2,9 @@ package domain;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.io.Serializable;
 
-public class Enrollment {
+public class Enrollment implements Serializable{
     private int code;
     private Student student;
     private Plan plan;

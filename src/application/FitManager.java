@@ -14,11 +14,37 @@ public class FitManager {
     private StudentService studentService;
     private PlanService planService;
     private EnrollmentService enrollmentService;
+    private final String STUDENTS_FILE = "students.dat";
+    private final String PLANS_FILE = "plans.dat";
+    private final String ENROLLMENTS_FILE = "enrollments.dat";
 
     public FitManager() {
         this.studentService = new StudentService();
         this.planService = new PlanService();
         this.enrollmentService = new EnrollmentService();
+    }
+
+    public OperationResult<Void> loadAllData() {
+        try {
+            this.studentService.load(STUDENTS_FILE);
+            this.planService.load(PLANS_FILE);
+            this.enrollmentService.load(ENROLLMENTS_FILE);
+            return new OperationResult<>(true, "Dados carregados com sucesso.");
+        } catch (exceptions.PersistenceException e) {
+            return new OperationResult<>(false, "Aviso ao carregar dados: " + e.getMessage());
+        }
+    }
+
+    public OperationResult<Void> saveAllData() {
+        try {
+            this.studentService.save(STUDENTS_FILE);
+            this.planService.save(PLANS_FILE);
+            this.enrollmentService.save(ENROLLMENTS_FILE);
+
+            return new OperationResult<>(true, "Dados salvos com sucesso.");
+        } catch (exceptions.PersistenceException e) {
+            return new OperationResult<>(false, "Erro crítico ao salvar dados: " + e.getMessage());
+        }
     }
 
     public OperationResult<Plan> registerPlan(String name, String description, PlanType type, int minDurationMonths, double pricePerMonth) {
