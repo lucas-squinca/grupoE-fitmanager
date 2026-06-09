@@ -3,6 +3,7 @@ package application;
 import domain.*;
 import persistence.Repository;
 import java.time.LocalDate;
+import exceptions.PersistenceException;
 
 public class EnrollmentService extends Repository<Enrollment> {
 
@@ -118,10 +119,10 @@ public class EnrollmentService extends Repository<Enrollment> {
     }
 
     @Override
-    public void save(String filePath) {
+    public void save(String filePath) throws PersistenceException {
     }
 
     @Override
-    public void load(String filePath) {
+    public void load(String filePath) throws PersistenceException {
     }
 }

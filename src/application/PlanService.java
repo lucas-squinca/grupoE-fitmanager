@@ -3,6 +3,7 @@ package application;
 import domain.*;
 import persistence.Repository;
 import java.util.ArrayList;
+import exceptions.PersistenceException;
 
 public class PlanService extends Repository<Plan> {
 
@@ -20,23 +21,28 @@ public class PlanService extends Repository<Plan> {
 
         Plan newPlan = null;
 
-        switch (type) {
-            case MONTHLY:
-                newPlan = new MonthlyPlan(name, description, minDurationMonths, pricePerMonth);
-                break;
-            case QUARTERLY:
-                newPlan = new QuarterlyPlan(name, description, minDurationMonths, pricePerMonth);
-                break;
-            case SEMI_ANNUAL:
-                newPlan = new SemiAnnualPlan(name, description, minDurationMonths, pricePerMonth);
-                break;
-            case ANNUAL:
-                newPlan = new AnnualPlan(name, description, minDurationMonths, pricePerMonth);
-                break;
-        }
+        try {
+            switch (type) {
+                case MONTHLY:
+                    newPlan = new MonthlyPlan(name, description, minDurationMonths, pricePerMonth);
+                    break;
+                case QUARTERLY:
+                    newPlan = new QuarterlyPlan(name, description, minDurationMonths, pricePerMonth);
+                    break;
+                case SEMI_ANNUAL:
+                    newPlan = new SemiAnnualPlan(name, description, minDurationMonths, pricePerMonth);
+                    break;
+                case ANNUAL:
+                    newPlan = new AnnualPlan(name, description, minDurationMonths, pricePerMonth);
+                    break;
+            }
 
-        this.add(newPlan);
-        return new OperationResult<>(true, "Plano cadastrado com sucesso!", newPlan);
+            this.add(newPlan);
+            return new OperationResult<>(true, "Plano cadastrado com sucesso!", newPlan);
+
+        } catch (exceptions.ValidationException e) {
+            return new OperationResult<>(false, e.getMessage());
+        }
     }
 
     public OperationResult<Void> updatePrice(String name, double newPrice) {
@@ -69,10 +75,10 @@ public class PlanService extends Repository<Plan> {
     }
 
     @Override
-    public void save(String filePath) {
+    public void save(String filePath) throws PersistenceException {
     }
 
     @Override
-    public void load(String filePath) {
+    public void load(String filePath) throws PersistenceException {
     }
 }
