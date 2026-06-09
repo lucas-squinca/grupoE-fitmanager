@@ -61,13 +61,18 @@ public class Enrollment implements Serializable {
     }
 
     public double calculateBalance() {
-        return this.totalPrice - this.calculateTotalPaid();
+        double totalFees = 0;
+        for (Payment p : this.payments) {
+            totalFees += p.getProcessingFee();
+        }
+        return (this.totalPrice + totalFees) - this.calculateTotalPaid();
     }
 
     public void cancel() {
-        // Só pode cancelar se estiver ativa
         if (this.status == EnrollmentStatus.ACTIVE) {
             this.status = EnrollmentStatus.CANCELLED;
+            // Aplica a multa ao preço total, refletindo imediatamente no Saldo Pendente
+            this.totalPrice += this.plan.getCancellationFee(this);
         }
     }
 

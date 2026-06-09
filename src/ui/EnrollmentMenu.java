@@ -102,58 +102,16 @@ public class EnrollmentMenu {
             }
         }
 
-        String[] paymentOptions = {"PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"};
-        int typeChoice = ui.showMenu("FORMA DE PAGAMENTO", paymentOptions);
+        PaymentContext ctx = new PaymentContext();
+        processPaymentDetails(ctx);
 
-        PaymentType paymentType = null;
-        String pixKey = "";
-        String cardLastDigits = "";
-        int installments = 1;
-        double amountReceived = 0.0;
-
-        switch (typeChoice) {
-            case 1:
-                paymentType = PaymentType.PIX;
-                pixKey = ui.getInput("Digite a chave PIX");
-                break;
-            case 2:
-                paymentType = PaymentType.CREDIT_CARD;
-                cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
-
-                boolean validInstallments = false;
-                while (!validInstallments) {
-                    try {
-                        installments = Integer.parseInt(ui.getInput("Digite o número de parcelas"));
-                        validInstallments = true;
-                    } catch (NumberFormatException e) {
-                        ui.showError("Erro: O número de parcelas deve ser um número inteiro. Tente novamente.");
-                    }
-                }
-                break;
-            case 3:
-                paymentType = PaymentType.DEBIT_CARD;
-                cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
-                break;
-            case 4:
-                paymentType = PaymentType.CASH;
-                boolean validReceived = false;
-                while (!validReceived) {
-                    try {
-                        amountReceived = Double.parseDouble(ui.getInput("Digite o valor recebido pelo aluno para cálculo de troco"));
-                        validReceived = true;
-                    } catch (NumberFormatException e) {
-                        ui.showError("Erro: O valor recebido deve ser numérico. Tente novamente.");
-                    }
-                }
-                break;
-            default:
-                ui.showError("Forma de pagamento inválida. Operação abortada.");
-                return;
+        if (ctx.type == null) {
+            return;
         }
 
         String description = ui.getInput("Digite uma descrição (ex: 'Mensalidade 1')");
 
-        OperationResult<Enrollment> result = fitManager.enrollStudent(cpf, planName, startDate, duration, amount, paymentType, description, pixKey, cardLastDigits, installments, amountReceived);
+        OperationResult<Enrollment> result = fitManager.enrollStudent(cpf, planName, startDate, duration, amount, ctx.type, description, ctx.pixKey, ctx.cardLastDigits, ctx.installments, ctx.amountReceived);
 
         if (result.isSuccess()) {
             ui.showMessage(result.getMessage());
@@ -187,58 +145,16 @@ public class EnrollmentMenu {
             }
         }
 
-        String[] paymentOptions = {"PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"};
-        int typeChoice = ui.showMenu("FORMA DE PAGAMENTO", paymentOptions);
+        PaymentContext ctx = new PaymentContext();
+        processPaymentDetails(ctx);
 
-        PaymentType paymentType = null;
-        String pixKey = "";
-        String cardLastDigits = "";
-        int installments = 1;
-        double amountReceived = 0.0;
-
-        switch (typeChoice) {
-            case 1:
-                paymentType = PaymentType.PIX;
-                pixKey = ui.getInput("Digite a chave PIX");
-                break;
-            case 2:
-                paymentType = PaymentType.CREDIT_CARD;
-                cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
-
-                boolean validInstallments = false;
-                while (!validInstallments) {
-                    try {
-                        installments = Integer.parseInt(ui.getInput("Digite o número de parcelas"));
-                        validInstallments = true;
-                    } catch (NumberFormatException e) {
-                        ui.showError("Erro: O número de parcelas deve ser inteiro.");
-                    }
-                }
-                break;
-            case 3:
-                paymentType = PaymentType.DEBIT_CARD;
-                cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
-                break;
-            case 4:
-                paymentType = PaymentType.CASH;
-                boolean validReceived = false;
-                while (!validReceived) {
-                    try {
-                        amountReceived = Double.parseDouble(ui.getInput("Digite o valor recebido"));
-                        validReceived = true;
-                    } catch (NumberFormatException e) {
-                        ui.showError("Erro: O valor recebido deve ser numérico.");
-                    }
-                }
-                break;
-            default:
-                ui.showError("Forma de pagamento inválida.");
-                return;
+        if (ctx.type == null) {
+            return; // Aborta a operação se o tipo de pagamento for inválido
         }
 
         String description = ui.getInput("Digite uma descrição");
 
-        OperationResult<Payment> result = fitManager.registerPayment(code, amount, paymentType, description, pixKey, cardLastDigits, installments, amountReceived);
+        OperationResult<Payment> result = fitManager.registerPayment(code, amount, ctx.type, description, ctx.pixKey, ctx.cardLastDigits, ctx.installments, ctx.amountReceived);
 
         if (result.isSuccess()) {
             ui.showMessage(result.getMessage());
@@ -288,6 +204,15 @@ public class EnrollmentMenu {
             dadosMatricula.append(String.format("Valor Total: R$ %.2f\n", enrollment.getTotalPrice()));
             dadosMatricula.append(String.format("Saldo Pendente: R$ %.2f\n", enrollment.calculateBalance()));
 
+            dadosMatricula.append("\n--- Histórico de Pagamentos ---\n");
+            if (enrollment.getPayments().isEmpty()) {
+                dadosMatricula.append("Nenhum pagamento registrado.\n");
+            } else {
+                for (Payment p : enrollment.getPayments()) {
+                    dadosMatricula.append("- ").append(p.getPaymentSummary()).append("\n");
+                }
+            }
+
             ui.showMessage(dadosMatricula.toString());
         }
     }
@@ -311,5 +236,59 @@ public class EnrollmentMenu {
         }
 
         ui.showMessage(relatorio.toString());
+    }
+
+    private void processPaymentDetails(PaymentContext ctx) {
+        String[] paymentOptions = {"PIX", "Cartão de Crédito", "Cartão de Débito", "Dinheiro"};
+        int typeChoice = ui.showMenu("FORMA DE PAGAMENTO", paymentOptions);
+
+        switch (typeChoice) {
+            case 1:
+                ctx.type = PaymentType.PIX;
+                ctx.pixKey = ui.getInput("Digite a chave PIX");
+                break;
+            case 2:
+                ctx.type = PaymentType.CREDIT_CARD;
+                ctx.cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+
+                boolean validInstallments = false;
+                while (!validInstallments) {
+                    try {
+                        ctx.installments = Integer.parseInt(ui.getInput("Digite o número de parcelas"));
+                        validInstallments = true;
+                    } catch (NumberFormatException e) {
+                        ui.showError("Erro: O número de parcelas deve ser um número inteiro. Tente novamente.");
+                    }
+                }
+                break;
+            case 3:
+                ctx.type = PaymentType.DEBIT_CARD;
+                ctx.cardLastDigits = ui.getInput("Digite os últimos 4 dígitos do cartão");
+                break;
+            case 4:
+                ctx.type = PaymentType.CASH;
+                boolean validReceived = false;
+                while (!validReceived) {
+                    try {
+                        ctx.amountReceived = Double.parseDouble(ui.getInput("Digite o valor recebido pelo aluno (para cálculo de troco)"));
+                        validReceived = true;
+                    } catch (NumberFormatException e) {
+                        ui.showError("Erro: O valor recebido deve ser numérico. Tente novamente.");
+                    }
+                }
+                break;
+            default:
+                ui.showError("Forma de pagamento inválida. Operação abortada.");
+                // ctx.type permanece null para indicar falha
+                break;
+        }
+    }
+
+    private class PaymentContext {
+        PaymentType type = null;
+        String pixKey = "";
+        String cardLastDigits = "";
+        int installments = 1;
+        double amountReceived = 0.0;
     }
 }
