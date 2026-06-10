@@ -11,7 +11,7 @@ public class DebitCardPayment extends Payment {
 
     @Override
     public double getProcessingFee() {
-        return getAmount() * 0.02; // Taxa de 2% no débito
+        return getAmount();
     }
 
     @Override

@@ -11,7 +11,10 @@ public class AnnualPlan extends Plan {
     @Override
     public double calculateTotalPrice(int months) {
         double total = getPricePerMonth() * months;
-        return total * 0.85;
+        if (months >= getMinDurationMonths()) {
+            return total * 0.85;
+        }
+        return total;
     }
 
     @Override

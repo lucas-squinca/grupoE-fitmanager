@@ -8,7 +8,10 @@ public class SemiAnnualPlan extends Plan {
     @Override
     public double calculateTotalPrice(int months) {
         double total = getPricePerMonth() * months;
-        return total * 0.90;
+        if (months >= getMinDurationMonths()) {
+            return total * 0.90;
+        }
+        return total;
     }
 
     @Override
