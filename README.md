@@ -41,7 +41,7 @@ git clone https://github.com/lucas-squinca/grupoE-fitmanager.git
 A partir da raiz do projeto:
 
 ```bash
-javac src/Main.java src/domain/*.java src/application/*.java src/ui/*.java
+javac src/Main.java src/domain/*.java src/application/*.java src/ui/*.java src/exceptions/*.java src/persistence/*.java
 ```
 
 ### 3. Execute
@@ -60,6 +60,8 @@ grupoE-fitmanager/
 │   ├── application/        # Camada de aplicação (FitManager e serviços)
 │   ├── domain/             # Camada de domínio (entidades e enums)
 │   ├── ui/                 # Camada de interface (menus e UserInterface)
+│   ├── exceptions/         # Camada de exceções
+│   ├── persistence/        # Camada de persistencia
 │   └── Main.java           # Ponto de entrada do sistema
 ├── report.md               # Relatório da primeira etapa
 ├── diagram.png             # Diagrama de classes final
